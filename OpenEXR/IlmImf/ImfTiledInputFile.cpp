@@ -2118,11 +2118,7 @@ TiledInputFile::numYTiles (int ly) const
     }
 }
 
-//
-//
-// FIXME, put this stuff in a common place
-//
-//
+
 Box2i
 TiledInputFile::dataWindowForLevel (int l) const
 {
@@ -2135,18 +2131,14 @@ TiledInputFile::dataWindowForLevel (int lx, int ly) const
 {
     try
     {
-        V2i levelMin = V2i(_data->minX, _data->minY);
-        V2i levelMax = levelMin + V2i(levelWidth(lx) - 1, levelHeight(ly) -1);
-
-        return Box2i(levelMin, levelMax);
+	return Imf::dataWindowForLevel(_data->minX, _data->maxX,
+				       _data->minY, _data->maxY, lx, ly);
     }
     catch (Iex::BaseExc &e)
     {
-        REPLACE_EXC (e, "Error calling dataWindowForLevel() on image "
-                    "file \"" << fileName() << "\". " << e);
-        throw;
-
-        return Box2i();
+	REPLACE_EXC (e, "Error calling dataWindowForLevel() on image "
+			"file \"" << fileName() << "\". " << e);
+	throw;
     }
 }
 
@@ -2163,32 +2155,19 @@ TiledInputFile::dataWindowForTile (int dx, int dy, int lx, int ly) const
 {
     try
     {
-        if (!isValidTile(dx,dy,lx,ly))
-            throw Iex::ArgExc ("Parameters not in valid range.");
+	if (!isValidTile(dx,dy,lx,ly))
+	    throw Iex::ArgExc ("Parameters not in valid range.");
 
-        V2i tileMin = V2i(_data->minX + dx * tileXSize(),
-                          _data->minY + dy * tileYSize());
-
-        V2i tileMax = tileMin + V2i(tileXSize() - 1, tileYSize() - 1);
-
-        V2i levelMax = dataWindowForLevel(lx, ly).max;
-
-#ifdef PLATFORM_WIN32
-        tileMax = V2i(min(tileMax[0], levelMax[0]), min(tileMax[1], levelMax[1]));
-#else
-        tileMax = V2i(std::min(tileMax[0], levelMax[0]),
-                std::min(tileMax[1], levelMax[1]));
-#endif
-        return Box2i(tileMin, tileMax);
+	return Imf::dataWindowForTile(_data->minX, _data->maxX,
+				      _data->minY, _data->maxY,
+				      tileXSize(), tileYSize(),
+				      dx, dy, lx, ly);
     }
     catch (Iex::BaseExc &e)
     {
-        REPLACE_EXC (e, "Error calling dataWindowForTile() on image "
-                        "file \"" << fileName() << "\". " << dx <<
-                        ", " << dy << ", " << lx << ", " << ly << e);
-        throw;
-
-        return Box2i();
+	REPLACE_EXC (e, "Error calling dataWindowForTile() on image "
+			"file \"" << fileName() << "\". " << e);
+	throw;
     }
 }
 
