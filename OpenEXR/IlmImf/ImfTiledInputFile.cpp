@@ -535,14 +535,6 @@ TiledInputFile::setFrameBuffer (const FrameBuffer &frameBuffer)
         if (i == channels.end())
             continue;
 
-        if (i.channel().type != j.slice().type)
-        {
-            THROW (Iex::ArgExc, "Pixel type of \"" << i.name() << "\" channel "
-                        "of input file \"" << fileName() << "\" is "
-                        "not compatible with the frame buffer's "
-                        "pixel type.");
-        }
-
         if (i.channel().xSampling != j.slice().xSampling ||
             i.channel().ySampling != j.slice().ySampling)
         {
@@ -1641,8 +1633,8 @@ TiledInputFile::readPixels(int scanLine1, int scanLine2)
 
                 FrameBuffer tempBuffer;
 
-                int offset = (tileRange.min.y - _data->minY)*tileXSize() +
-                             (tileRange.min.x - _data->minX);
+                int offset = (tileRange.min.y)*tileXSize() +
+                             (tileRange.min.x);
 
                 for (FrameBuffer::ConstIterator k = oldBuffer.begin();
                      k != oldBuffer.end(); ++k)
@@ -1713,13 +1705,13 @@ TiledInputFile::readPixels(int scanLine1, int scanLine2)
                         // set the pointers to the start of the y scanline in
                         // this tile
                         fromPtr = fromSlice.base +
-                                  (y - _data->minY) * fromSlice.yStride +
-                                  (tileRange.min.x - _data->minX) *
+                                  y * fromSlice.yStride +
+                                  tileRange.min.x *
                                   fromSlice.xStride;
 
                         toPtr   = toSlice.base +
-                                  (y - _data->minY) * toSlice.yStride +
-                                  (tileRange.min.x - _data->minX) *
+                                  y * toSlice.yStride +
+                                  tileRange.min.x *
                                   toSlice.xStride;
 
                         // copy all pixels in this tile's scanline
@@ -1744,7 +1736,7 @@ TiledInputFile::readPixels(int scanLine1, int scanLine2)
                     switch (s.type)
                     {
                         case UINT:
-                            delete [] (((unsigned int*)s.base) + offset);
+                            delete [] ((unsigned int*)s.base + offset);
                         break;
 
                         case HALF:
@@ -1754,7 +1746,7 @@ TiledInputFile::readPixels(int scanLine1, int scanLine2)
                         break;
 
                         case FLOAT:
-                            delete [] (((float*)s.base) + offset);
+                            delete [] ((float*)s.base + offset);
                         break;
                     }                
                 }

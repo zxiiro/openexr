@@ -157,18 +157,14 @@ class InputFile
 				     const char *&pixelData,
 				     int &pixelDataSize);
 
+    class Data;
+    
   private:
 
     InputFile (const InputFile &);			// not implemented
     InputFile & operator = (const InputFile &);		// not implemented
-
-    std::string		_fileName;
-    Header		_header;
-    int			_version;
-    std::ifstream	_is;
-
-    TiledInputFile *	_tFile;
-    ScanLineInputFile *	_sFile;
+    
+    Data*		_data;
 };
 
 

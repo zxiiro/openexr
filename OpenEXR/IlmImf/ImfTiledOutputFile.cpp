@@ -591,8 +591,6 @@ TiledOutputFile::TiledOutputFile (const char fileName[], const Header &header):
 					 _data->numXTiles,
 					 _data->numYTiles);
 
-	//resizeTileOffsets(_data);
-
 #ifndef HAVE_IOS_BASE
 	_data->os.open (fileName, std::ios::binary);        
 #else
