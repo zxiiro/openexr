@@ -433,12 +433,6 @@ writeRead (int W, int H, Compression comp, int xSize, int ySize)
 } // namespace
 
 
-// FIXME,
-// put lineorder in different test
-// put triggerBuffering and triggerSeeks in a different test
-//
-// use 3 different image sizes:
-// 1)
 void
 testTiledRgba ()
 {
