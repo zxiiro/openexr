@@ -145,7 +145,7 @@ TileOffsets::checkForErrors()
 
 
 bool
-TileOffsets::readTile (ifstream& is)
+TileOffsets::readTile (std::ifstream& is)
 {
     if (!is)
 	return true;
@@ -194,7 +194,7 @@ TileOffsets::readTile (ifstream& is)
 
 
 void
-TileOffsets::reconstructFromFile (ifstream& is)
+TileOffsets::reconstructFromFile (std::ifstream& is)
 {
     //
     // The tile index stores the offset in the file for each tile. This is
@@ -250,7 +250,7 @@ TileOffsets::reconstructFromFile (ifstream& is)
 
 
 void
-TileOffsets::readFrom (ifstream& is)
+TileOffsets::readFrom (std::ifstream& is)
 {
     //
     // Read in the tile offsets from the file's index
@@ -282,7 +282,7 @@ TileOffsets::readFrom (ifstream& is)
 
 
 long
-TileOffsets::writeTo (ofstream& os)
+TileOffsets::writeTo (std::ofstream& os)
 {
     //
     // Writes the tile index to the file. Returns the start position of the

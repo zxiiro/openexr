@@ -58,8 +58,8 @@ class TileOffsets
 		 int numXLevels = 0, int numYLevels = 0,
 		 int* numXTiles = NULL, int* numYTiles = NULL);    
 
-    void	readFrom (ifstream& is);
-    long	writeTo (ofstream& os);
+    void	readFrom (std::ifstream& is);
+    long	writeTo (std::ofstream& os);
     bool	isEmpty ();
     
     
@@ -74,15 +74,15 @@ class TileOffsets
 
   private:
   
-    void reconstructFromFile (ifstream& is);
+    void reconstructFromFile (std::ifstream& is);
     int  numTiles();
-    bool readTile(ifstream& is);
+    bool readTile(std::ifstream& is);
     bool checkForErrors ();
     bool isValidTile(int dx, int dy, int lx, int ly);
 
     LevelMode _mode;
     int _numXLevels, _numYLevels;
-    vector<vector<vector <long> > > _tileOffsets;
+    std::vector<std::vector<std::vector <long> > > _tileOffsets;
 };
 
 } // namespace Imf

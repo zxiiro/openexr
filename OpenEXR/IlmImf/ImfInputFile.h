@@ -165,7 +165,7 @@ class InputFile
     InputFile (const InputFile &);			// not implemented
     InputFile & operator = (const InputFile &);		// not implemented
     
-    friend int TiledOutputFile::copyPixels(InputFile &);
+    friend void TiledOutputFile::copyPixels(InputFile &);
     TiledInputFile* tFile();
     
     Data*		_data;

@@ -466,7 +466,10 @@ InputFile::setFrameBuffer (const FrameBuffer &frameBuffer)
             //
 
             if (i == channels.end() || i.channel().type != j.slice().type)
+            {
                 _data->cachedTileY = -1;
+                break;
+            }
         }
     
         return _data->tFile->setFrameBuffer(frameBuffer);
@@ -562,7 +565,22 @@ InputFile::rawTileData (int &dx, int &dy, int &lx, int &ly,
 TiledInputFile*
 InputFile::tFile()
 {
-    return _data->tFile;
+    try
+    {
+        if (!isTiled (_data->version))
+        {
+            throw Iex::ArgExc ("Tried to access a tiled file in an InputFile "
+                               "which is not tiled. ");
+        }
+
+        return _data->tFile;
+    }
+    catch (Iex::BaseExc &e)
+    {
+        REPLACE_EXC (e, "Error reading tile data from image "
+                        "file \"" << fileName() << "\". " << e);
+        throw;
+    }
 }
 
 

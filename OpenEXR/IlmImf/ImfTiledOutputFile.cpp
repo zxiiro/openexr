@@ -1087,7 +1087,7 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
     const Header &hdr = header();
     const Header &inHdr = in.header(); 
 
-    if(!hdr.hasTileDescription() || inHdr.hasTileDescription())
+    if(!hdr.hasTileDescription() || !inHdr.hasTileDescription())
     {
         THROW (Iex::ArgExc, "Cannot copy pixels from image "
                "file \"" << in.fileName() << "\" to image "
@@ -1160,20 +1160,16 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
       case MIPMAP_LEVELS:
 
         for (size_t i_l = 0; i_l < numLevels(); ++i_l)
-        {
             numAllTiles += numXTiles(i_l) * numYTiles(i_l);
-        }
+
         break;
 
       case RIPMAP_LEVELS:
 
         for (size_t i_ly = 0; i_ly < numYLevels(); ++i_ly)
-        {
             for (size_t i_lx = 0; i_lx < numXLevels(); ++i_lx)
-            {
                 numAllTiles += numXTiles(i_lx) * numYTiles(i_ly);
-            }
-        }
+
         break;
 
       default:
@@ -1184,7 +1180,12 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
     for (int i = 0; i < numAllTiles; ++i)
     {
         const char *pixelData;
-        int pixelDataSize, dx, dy, lx, ly;
+        int pixelDataSize;
+
+        int dx = _data->nextTileToWrite.dx;
+        int dy = _data->nextTileToWrite.dy;
+        int lx = _data->nextTileToWrite.lx;
+        int ly = _data->nextTileToWrite.ly;
 
         in.rawTileData (dx, dy, lx, ly, pixelData, pixelDataSize);
         writeTileData (_data, dx, dy, lx, ly, pixelData, pixelDataSize);
