@@ -37,7 +37,8 @@ libIlmImf_la_SOURCES = ImfAttribute.cpp ImfBoxAttribute.cpp ImfCRgbaFile.cpp \
 		       ImfTileDescriptionAttribute.h ImfTiledInputFile.cpp \
 		       ImfTiledInputFile.h ImfTiledOutputFile.cpp \
 		       ImfTiledOutputFile.h ImfTiledRgbaFile.cpp \
-		       ImfTiledRgbaFile.h ImfTiledMisc.cpp ImfTiledMisc.h
+		       ImfTiledRgbaFile.h ImfTiledMisc.cpp ImfTiledMisc.h \
+		       ImfTileOffsets.cpp ImfTileOffsets.h
 
 
 libIlmImfincludedir = $(includedir)/OpenEXR
@@ -59,11 +60,12 @@ libIlmImfinclude_HEADERS = ImfAttribute.h ImfBoxAttribute.h \
 			   ImfPreviewImageAttribute.h ImfRgba.h \
 			   ImfScanLineInputFile.h ImfTileDescription.h \
 			   ImfTileDescriptionAttribute.h ImfTiledInputFile.h \
-			   ImfTiledOutputFile.h ImfTiledRgbaFile.h
+			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
+			   ImfTileOffsets.h
 
 noinst_HEADERS = ImfCompressor.h ImfRleCompressor.h ImfZipCompressor.h \
 		 ImfPizCompressor.h ImfMisc.h ImfAutoArray.h \
-		 ImfScanLineInputFile.h
+		 ImfScanLineInputFile.h ImfTileOffsets.h
 
 EXTRA_DIST = $(noinst_HEADERS)
 

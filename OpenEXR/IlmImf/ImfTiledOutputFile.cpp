@@ -58,9 +58,8 @@
 #include <fstream>
 #include <assert.h>
 #include <map>
+#include <ImfTileOffsets.h>
 
-
-//FIXME, don't return in a catch
 
 #if defined PLATFORM_WIN32
 namespace
@@ -183,9 +182,8 @@ public:
     int*		numXTiles;		// number of x tiles at a level
     int*		numYTiles;		// number of y tiles at a level
 
-    // FIXME, make a 3d or 4d class for these
-    vector<vector<vector <long> > > tileOffsets; // stores offsets in file for
-						 // each tile
+    TileOffsets tileOffsets;			// stores offsets in file for
+						// each tile
 
     Compressor *	compressor;		// the compressor
     Compressor::Format	format;			// compressor's data format
@@ -316,288 +314,6 @@ TiledOutputFile::Data::nextTileCoord(const TileCoord& a)
 
 namespace {
 
-
-long
-tileOffset(TiledOutputFile::Data const *ofd, int dx, int dy, int lx, int ly)
-{
-    //
-    // Looks up the value of the tile with tile coordinate (dx, dy) and
-    // level number (lx, ly) in the tileOffsets array and returns the
-    // cooresponding offset.
-    //
-    
-    long off;
-    switch (ofd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-
-	off = ofd->tileOffsets[0][dy][dx];
-	break;
-
-      case MIPMAP_LEVELS:
-
-	off = ofd->tileOffsets[lx][dy][dx];
-	break;
-
-      case RIPMAP_LEVELS:
-
-	off = ofd->tileOffsets[lx + ly*ofd->numXLevels][dy][dx];
-	break;
-
-      default:
-
-	throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-
-    return off;
-}
-
-
-long
-tileOffset(TiledOutputFile::Data const *ofd, int dx, int dy, int l)
-{
-    return tileOffset(ofd, dx, dy, l, l);
-}
-
-
-void
-setTileOffset(TiledOutputFile::Data *ofd,
-	      int dx, int dy, int lx, int ly, long offset)
-{
-    //
-    // Looks up the tile with tile coordinate (dx, dy) and level number
-    // (lx, ly) in the tileOffsets array and sets its value to offset.
-    //
-
-    switch (ofd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-
-	ofd->tileOffsets[0][dy][dx] = offset;
-	break;
-
-      case MIPMAP_LEVELS:
-
-	ofd->tileOffsets[lx][dy][dx] = offset;
-	break;
-
-      case RIPMAP_LEVELS:
-
-	ofd->tileOffsets[lx + ly*ofd->numXLevels][dy][dx] = offset;
-	break;
-
-      default:
-
-	throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-}
-
-
-void
-setTileOffset(TiledOutputFile::Data *ofd,
-	      int dx, int dy, int l, long offset)
-{
-    setTileOffset(ofd, dx, dy, l, l, offset);
-}
-
-
-// done, i think
-long
-writeTileOffsets(TiledOutputFile::Data *ofd)
-{
-    //
-    // Writes the tile index to the file. Returns the start position of the
-    // index in the file.
-    //
-    
-    long pos = ofd->os.tellp();
-
-    if (pos == -1)
-	Iex::throwErrnoExc ("Cannot determine current file position (%T).");
-
-    switch (ofd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-      case MIPMAP_LEVELS:
-             
-	// iterate over all levels
-	for (size_t i_l = 0; i_l < ofd->tileOffsets.size(); ++i_l)
-	{
-	    // in this level, iterate over all y Tiles
-	    for (size_t i_dy = 0;
-		 i_dy < ofd->tileOffsets[i_l].size(); ++i_dy)
-	    {
-		// and iterate over all x Tiles
-		for (size_t i_dx = 0;
-		     i_dx < ofd->tileOffsets[i_l][i_dy].size(); ++i_dx)
-		{
-		    Xdr::write <StreamIO> (ofd->os,
-					   ofd->tileOffsets[i_l][i_dy][i_dx]);
-		}
-	    }
-	}
-	break;
-        
-      case RIPMAP_LEVELS:
-
-	// iterate over all lys
-	for (size_t i_ly = 0; i_ly < ofd->numYLevels; ++i_ly)
-	{
-	    // iterate over all lxs
-	    for (size_t i_lx = 0; i_lx < ofd->numXLevels; ++i_lx)
-	    {
-		int index = i_ly*ofd->numXLevels + i_lx;
-
-		// and iterate over all y Tiles in level (i_lx, i_ly)
-		for (size_t i_dy = 0;
-		     i_dy < ofd->tileOffsets[index].size(); ++i_dy)
-		{
-		    // and iterate over all x Tiles
-		    for (size_t i_dx = 0;
-			 i_dx < ofd->tileOffsets[index][i_dy].size();
-			 ++i_dx)
-		    {
-			Xdr::write <StreamIO> (ofd->os,
-				ofd->tileOffsets[index][i_dy][i_dx]);
-		    }
-		}
-	    }
-	}
-	break;
-        
-    default:
-
-      throw Iex::ArgExc ("Unknown LevelMode format.");
-
-    }
-
-    return pos;
-}
-
-// FIXME, rename this, may go away if we use a 3d class for the offsets
-void
-resizeTileOffsets(TiledOutputFile::Data *ofd)
-{
-    switch (ofd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-      case MIPMAP_LEVELS:
-
-        ofd->tileOffsets.resize(ofd->numXLevels);
-
-        // iterate over all levels
-        for (size_t i_l = 0; i_l < ofd->tileOffsets.size(); ++i_l)
-        {
-	    ofd->tileOffsets[i_l].resize(ofd->numYTiles[i_l]);
-
-	    // in this level, iterate over all x Tiles
-	    for (size_t i_dx = 0;
-		 i_dx < ofd->tileOffsets[i_l].size();
-		 ++i_dx)
-	    {
-		ofd->tileOffsets[i_l][i_dx].resize(ofd->numXTiles[i_l],
-						   long(0));
-	    }
-        }
-        break;
-
-      case RIPMAP_LEVELS:
-
-        ofd->tileOffsets.resize(ofd->numXLevels * ofd->numYLevels);
-
-        // iterate over all lys
-        for (size_t i_ly = 0; i_ly < ofd->numYLevels; ++i_ly)
-        {
-	    // iterate over all lxs
-	    for (size_t i_lx = 0; i_lx < ofd->numXLevels; ++i_lx)
-	    {
-		int index = i_ly * ofd->numXLevels + i_lx;
-		ofd->tileOffsets[index].resize(ofd->numYTiles[i_ly]);
-
-		// and iterate over all x Tiles in level (i_lx, i_ly)
-		for (size_t i_dx = 0;
-		     i_dx < ofd->tileOffsets[index].size();
-		     ++i_dx)
-		{
-		    ofd->tileOffsets[index][i_dx].resize(ofd->numXTiles[i_lx],
-							 long(0));
-		}
-	    }
-	}
-        break;
-
-      default:
-
-        throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-}
-
-
-bool
-tileOffsetsIsEmpty(TiledOutputFile::Data *ofd)
-{
-    switch (ofd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-      case MIPMAP_LEVELS:
-      
-	// iterate over all levels
-	for (size_t i_l = 0; i_l < ofd->tileOffsets.size(); ++i_l)
-	{
-	    // in this level, iterate over all y Tiles
-	    for (size_t i_dy = 0;
-		 i_dy < ofd->tileOffsets[i_l].size(); ++i_dy)
-	    {
-		// and iterate over all x Tiles
-		for (size_t i_dx = 0;
-		     i_dx < ofd->tileOffsets[i_l][i_dy].size(); ++i_dx)
-		{
-		    if (ofd->tileOffsets[i_l][i_dy][i_dx] != 0)
-			return false;
-		}
-	    }
-	}
-	break;
-        
-      case RIPMAP_LEVELS:
-
-	// iterate over all lys
-	for (size_t i_ly = 0; i_ly < ofd->numYLevels; ++i_ly)
-	{
-	    // iterate over all lxs
-	    for (size_t i_lx = 0; i_lx < ofd->numXLevels; ++i_lx)
-	    {
-		int index = i_ly*ofd->numXLevels + i_lx;
-
-		// and iterate over all y Tiles in level (i_lx, i_ly)
-		for (size_t i_dy = 0;
-		     i_dy < ofd->tileOffsets[index].size(); ++i_dy)
-		{
-		    // and iterate over all x Tiles
-		    for (size_t i_dx = 0;
-			 i_dx < ofd->tileOffsets[index][i_dy].size();
-			 ++i_dx)
-		    {
-			if (ofd->tileOffsets[index][i_dy][i_dx] != 0)
-			    return false;
-		    }
-		}
-	    }
-	}
-	break;
-        
-    default:
-
-      throw Iex::ArgExc ("Unknown LevelMode format.");
-      
-      return true;
-
-    }
-    
-    return true;
-}
-
-
 void
 writeTileData (TiledOutputFile::Data *ofd,
                int dx, int dy, int lx, int ly, 
@@ -616,7 +332,8 @@ writeTileData (TiledOutputFile::Data *ofd,
     if (currentPosition == 0)
         currentPosition = ofd->os.tellp();
 
-    setTileOffset(ofd, dx, dy, lx, ly, currentPosition);
+    ofd->tileOffsets(dx, dy, lx, ly) = currentPosition;
+    //setTileOffset(ofd, dx, dy, lx, ly, currentPosition);
 
 #ifdef DEBUG
 
@@ -868,8 +585,13 @@ TiledOutputFile::TiledOutputFile (const char fileName[], const Header &header):
 	_data->tileBufferSize = _data->maxBytesPerTileLine * tileYSize();
 	_data->tileBuffer.resizeErase (_data->tileBufferSize);
 
-	// FIXME, not resize, but initialize
-	resizeTileOffsets(_data);
+	_data->tileOffsets = TileOffsets(_data->tileDesc.mode,
+					 _data->numXLevels,
+					 _data->numYLevels,
+					 _data->numXTiles,
+					 _data->numYTiles);
+
+	//resizeTileOffsets(_data);
 
 #ifndef HAVE_IOS_BASE
 	_data->os.open (fileName, std::ios::binary);        
@@ -882,7 +604,7 @@ TiledOutputFile::TiledOutputFile (const char fileName[], const Header &header):
 
 	_data->header.writeTo(_data->os, true);
 
-	_data->tileOffsetsPosition = writeTileOffsets(_data);
+	_data->tileOffsetsPosition = _data->tileOffsets.writeTo(_data->os);
 	_data->currentPosition = _data->os.tellp();
     }
     catch (Iex::BaseExc &e)
@@ -904,7 +626,7 @@ TiledOutputFile::~TiledOutputFile ()
             {
                 _data->os.seekp(_data->tileOffsetsPosition);
                 checkError(_data->os);
-                writeTileOffsets(_data);
+                _data->tileOffsets.writeTo(_data->os);
             }
             catch (...)
             {
@@ -1036,7 +758,7 @@ TiledOutputFile::writeTile (int dx, int dy, int lx, int ly)
                             "," << lx << "," << ly << "), but that is not a "
                             "valid tile coordinate.");
  
-	if (tileOffset(_data, dx, dy, lx, ly) != 0)
+	if (_data->tileOffsets(dx, dy, lx, ly) != 0)
         THROW (Iex::ArgExc, "Tried to write tile (" << dx << ", " << dy <<
                             ", " << lx << ", " << ly << ") more than once.");
 
@@ -1422,7 +1144,7 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
     // Verify that no pixel data have been written to this file yet.
     //
 
-    if (!tileOffsetsIsEmpty(_data))
+    if (!_data->tileOffsets.isEmpty())
     {
         THROW (Iex::LogicExc, "Quick pixel copy from image "
                "file \"" << in.fileName() << "\" to image "
@@ -1538,7 +1260,7 @@ TiledOutputFile::copyPixels (InputFile &in)
     // Verify that no pixel data have been written to this file yet.
     //
 
-    if (!tileOffsetsIsEmpty(_data))
+    if (!_data->tileOffsets.isEmpty())
     {
         THROW (Iex::LogicExc, "Quick pixel copy from image "
                "file \"" << in.fileName() << "\" to image "

@@ -59,6 +59,7 @@
 #include <ImathVec.h>
 #include <ImfConvert.h>
 #include <ImfVersion.h>
+#include <ImfTileOffsets.h>
 
 
 #if defined PLATFORM_WIN32
@@ -133,557 +134,67 @@ InSliceInfo::InSliceInfo (PixelType tifb,
 struct TiledInputFile::Data
 {
 public:
-    string          fileName;               // the filename
-    Header          header;                 // the image header
-    TileDescription tileDesc;               // describes the tile layout
-    int             version;                // file's version
-    FrameBuffer     frameBuffer;            // framebuffer to write into
-    LineOrder       lineOrder;              // the file's lineorder
-    int             minX;                   // data window's min x coord
-    int             maxX;                   // data window's max x coord
-    int             minY;                   // data window's min y coord
-    int             maxY;                   // data window's max x coord
+    string	    fileName;		    // the filename
+    Header	    header;		    // the image header
+    TileDescription tileDesc;		    // describes the tile layout
+    int		    version;		    // file's version
+    FrameBuffer	    frameBuffer;	    // framebuffer to write into
+    LineOrder	    lineOrder;		    // the file's lineorder
+    int		    minX;		    // data window's min x coord
+    int		    maxX;		    // data window's max x coord
+    int		    minY;		    // data window's min y coord
+    int		    maxY;		    // data window's max x coord
 
     //
     // cached tile information:
     //
-    int             numXLevels;             // number of x levels
-    int             numYLevels;             // number of y levels
-    int*            numXTiles;              // number of x tiles at a level
-    int*            numYTiles;              // number of y tiles at a level
+    int		    numXLevels;		    // number of x levels
+    int		    numYLevels;		    // number of y levels
+    int*	    numXTiles;		    // number of x tiles at a level
+    int*	    numYTiles;		    // number of y tiles at a level
 
-    // FIXME, make it a 3d or 4d class
-    vector<vector<vector <long> > >
-                    tileOffsets;            // stores offsets in file for
-                                            // each tile
+    TileOffsets	    tileOffsets;	    // stores offsets in file for
+					    // each tile
 
-    long            currentPosition;        // file offset for current tile,
-                                            // used to prevent unnecessary
-                                            // seeking
+    long	    currentPosition;        // file offset for current tile,
+					    // used to prevent unnecessary
+					    // seeking
 
-    Compressor *    compressor;             // the compressor
-    Compressor::Format  format;             // compressor's data format
-    vector<InSliceInfo> slices;             // info about channels in file
-    ifstream*       is;                     // file stream to read from
+    Compressor*	    compressor;		    // the compressor
+    Compressor::Format  format;		    // compressor's data format
+    vector<InSliceInfo> slices;		    // info about channels in file
+    ifstream*	    is;			    // file stream to read from
 
-    size_t          maxBytesPerTileLine;    // combined size of a line
-                                            // over all channels
+    size_t	    maxBytesPerTileLine;    // combined size of a line
+					    // over all channels
 
-    size_t          tileBufferSize;         // size of the tile buffer
-    Array<char>     tileBuffer;             // holds a single tile
-    const char *    uncompressedData;	    // the uncompressed tile
+    size_t	    tileBufferSize;	    // size of the tile buffer
+    Array<char>	    tileBuffer;		    // holds a single tile
+    const char*	    uncompressedData;	    // the uncompressed tile
 
-    bool            deleteStream;           // should we delete the stream
-                                            // ourselves? or does someone else
-                                            // do it?
-
+    bool	    deleteStream;	    // should we delete the stream
+					    // ourselves? or does someone else
+					    // do it?
     Data (bool del) :
-        numXTiles(0), numYTiles(0),
-        uncompressedData(0), compressor(0), deleteStream(del)
+	numXTiles(0), numYTiles(0),
+	uncompressedData(0), compressor(0), deleteStream(del)
     {
-        if (deleteStream)
-            is = new ifstream();
+	if (deleteStream)
+	    is = new ifstream();
     }
 
     ~Data ()
     {
-        delete numXTiles;
-        delete numYTiles;
-        delete compressor;
-        if (deleteStream)
-            delete is;
+	delete numXTiles;
+	delete numYTiles;
+	delete compressor;
+	if (deleteStream)
+	    delete is;
     }
 };
 
 
 namespace {
-
-
-//
-// Looks up the value of the tile with tile coordinate (dx, dy) and
-// level number (lx, ly) in the tileOffsets array and returns the
-// cooresponding offset.
-//
-long
-getTileOffset(TiledInputFile::Data const *ifd, int dx, int dy, int lx, int ly)
-{
-    long off;
-
-    switch (ifd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-
-        off = ifd->tileOffsets[0][dy][dx];
-        break;
-
-      case MIPMAP_LEVELS:
-
-        off = ifd->tileOffsets[lx][dy][dx];
-        break;
-
-      case RIPMAP_LEVELS:
-
-        off = ifd->tileOffsets[lx + ly*ifd->numXLevels][dy][dx];
-        break;
-
-      default:
-
-        throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-    return off;
-}
-
-
-//
-// Convenience function used for mipmaps.
-//
-long
-getTileOffset(TiledInputFile::Data const *ifd, int dx, int dy, int l)
-{
-    return getTileOffset(ifd, dx, dy, l, l);
-}
-
-
-//
-// Looks up the tile with tile coordinate (dx, dy) and level number 
-// (lx, ly) in the tileOffsets array and sets its value to offset.
-//
-void
-setTileOffset(TiledInputFile::Data *ifd, int dx, int dy, int lx, int ly,
-              long offset)
-{
-    switch (ifd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-
-        ifd->tileOffsets[0][dy][dx] = offset;
-        break;
-
-      case MIPMAP_LEVELS:
-
-        ifd->tileOffsets[lx][dy][dx] = offset;
-        break;
-
-      case RIPMAP_LEVELS:
-
-        ifd->tileOffsets[lx + ly*ifd->numXLevels][dy][dx] = offset;
-        break;
-
-      default:
-
-        throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-}
-
-
-//
-// Convenience function used for mipmaps.
-//
-void
-setTileOffset(TiledInputFile::Data *ifd, int dx, int dy, int l, long offset)
-{
-    setTileOffset(ifd, dx, dy, l, l, offset);
-}
-
-
-void
-resizeTileOffsets(TiledInputFile::Data *ifd)
-{
-    switch (ifd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-      case MIPMAP_LEVELS:
-
-        ifd->tileOffsets.resize(ifd->numXLevels);
-
-        // iterator over all levels
-        for (size_t i_l = 0; i_l < ifd->tileOffsets.size(); ++i_l)
-        {
-            ifd->tileOffsets[i_l].resize(ifd->numYTiles[i_l]);
-
-            // in this level, iterate over all y Tiles
-            for (size_t i_dy = 0;
-                 i_dy < ifd->tileOffsets[i_l].size();
-                 ++i_dy)
-            {
-                ifd->tileOffsets[i_l][i_dy].resize(ifd->numXTiles[i_l]);
-            }
-        }
-        break;
-
-      case RIPMAP_LEVELS:
-
-        ifd->tileOffsets.resize(ifd->numXLevels * ifd->numYLevels);
-
-        // iterator over all ly's
-        for (size_t i_ly = 0; i_ly < ifd->numYLevels; ++i_ly)
-        {
-            // iterator over all lx's
-            for (size_t i_lx = 0; i_lx < ifd->numXLevels; ++i_lx)
-            {
-                int index = i_ly * ifd->numXLevels + i_lx;
-                ifd->tileOffsets[index].resize(ifd->numYTiles[i_ly]);
-
-                // and iterator over all y Tiles in level (i_lx, i_ly)
-                for (size_t i_dy = 0;
-                     i_dy < ifd->tileOffsets[index].size();
-                     ++i_dy)
-                {
-                    ifd->tileOffsets[index][i_dy].resize(ifd->numXTiles[i_lx]);
-                }
-            }
-        }
-        break;
-
-      default:
-
-        throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-}
-
-
-// done, i think
-//
-// The tile index stores the offset in the file for each tile. This is usually
-// stored towards the beginning of the file. If the tile index is not complete
-// (the file writing was aborted) this function will seek through the whole
-// file, and reconstructs the tile index if possible.
-//
-void
-reconstructTileOffsets (TiledInputFile::Data *ifd)
-{
-    long position = ifd->is->tellg();
-
-    try
-    {
-        switch (ifd->tileDesc.mode)
-        {
-          case ONE_LEVEL:
-          case MIPMAP_LEVELS:
-
-            //
-            // Seek to each tile and record its offset
-            //
-
-	    // FIXME, there is no need for all these for's, just calculate the number of expected
-	    // tiles, and read their coordinates in.
-
-            // iterator over all levels
-            for (size_t i_l = 0; i_l < ifd->tileOffsets.size(); ++i_l)
-            {
-                // in this level, iterate over all y Tiles
-                for (size_t i_dy = 0;
-                     i_dy < ifd->tileOffsets[i_l].size(); ++i_dy)
-                {
-                    // and iterate over all x Tiles
-                    for (size_t i_dx = 0;
-                         i_dx < ifd->tileOffsets[i_l][i_dy].size(); ++i_dx)
-                    {
-                        if (!(*ifd->is))
-                            break;
-
-                        long tileOffset = ifd->is->tellg();
-
-                        int tileX;
-                        Xdr::read <StreamIO> (*ifd->is, tileX);
-
-                        if (!(*ifd->is))
-                            break;
-
-                        int tileY;
-                        Xdr::read <StreamIO> (*ifd->is, tileY);
-
-                        if (!(*ifd->is))
-                            break;
-
-                        int levelX;
-                        Xdr::read <StreamIO> (*ifd->is, levelX);
-
-                        if (!(*ifd->is))
-                            break;
-
-                        int levelY;
-                        Xdr::read <StreamIO> (*ifd->is, levelY);
-
-                        if (!(*ifd->is))
-                            break;
-
-                        int dataSize;
-                        Xdr::read <StreamIO> (*ifd->is, dataSize);
-
-                        if (!(*ifd->is))
-                            break;
-
-			// FIXME, check IsValidTile()
-                        Xdr::skip <StreamIO> (*ifd->is, dataSize);
-                        setTileOffset(ifd, tileX, tileY, levelX, tileOffset);
-                    }
-                }
-            }
-
-            break;
-
-          case RIPMAP_LEVELS:
-
-            //
-            // Seek to each tile and record its offset
-            //
-
-            // iterator over all ly's
-            for (size_t i_ly = 0; i_ly < ifd->numYLevels; ++i_ly)
-            {
-                // iterator over all lx's
-                for (size_t i_lx = 0; i_lx < ifd->numXLevels; ++i_lx)
-                {
-                    int index = i_ly*ifd->numXLevels + i_lx;
-
-                    // and iterator over all y Tiles in level (i_lx, i_ly)
-                    for (size_t i_dy = 0;
-                         i_dy < ifd->tileOffsets[index].size(); ++i_dy)
-                    {
-                        // and iterate over all x Tiles
-                        for (size_t i_dx = 0;
-                             i_dx < ifd->tileOffsets[index][i_dy].size();
-                             ++i_dx)
-                        {
-                            if (!(*ifd->is))
-                                break;
-
-                            long tileOffset = ifd->is->tellg();
-
-                            int tileX;
-                            Xdr::read <StreamIO> (*ifd->is, tileX);
-
-                            if (!(*ifd->is))
-                                break;
-
-                            int tileY;
-                            Xdr::read <StreamIO> (*ifd->is, tileY);
-
-                            if (!(*ifd->is))
-                                break;
-
-                            int levelX;
-                            Xdr::read <StreamIO> (*ifd->is, levelX);
-
-                            if (!(*ifd->is))
-                                break;
-
-                            int levelY;
-                            Xdr::read <StreamIO> (*ifd->is, levelY);
-
-                            if (!(*ifd->is))
-                                break;
-
-                            int dataSize;
-                            Xdr::read <StreamIO> (*ifd->is, dataSize);
-
-                            if (!(*ifd->is))
-                                break;
-
-                            Xdr::skip <StreamIO> (*ifd->is, dataSize);
-
-			    // FIXME, check IsValidTile()
-                            setTileOffset(ifd, tileX, tileY, levelX, levelY,
-                                          tileOffset);
-                        }
-                    }
-                }
-            }
-
-            break;
-
-         default:
-
-	    // FIXME, assert
-            ;// should not happen
-         
-        }
-    }
-    catch (...)
-    {
-        //
-        // Suppress all exceptions.  This functions is
-        // called only to reconstruct the line offset
-        // table for incomplete files, and exceptions
-        // are likely.
-        //
-
-	// TODO, add comments about the fact that we break out on the first exception
-	// we don't try to recover tiles after the first exception.
-    }
-
-    ifd->is->clear();
-    ifd->is->seekg (position);
-}
-
-
-// done, i think
-//
-// Reads the tile index from the file.
-//
-void
-readTileOffsets (TiledInputFile::Data *ifd)
-{
-    switch (ifd->tileDesc.mode)
-    {
-      case ONE_LEVEL:
-      case MIPMAP_LEVELS:
-
-        {
-            //
-            // Read in the tile offsets from the file's index
-            //
-            // iterator over all levels
-            for (size_t i_l = 0; i_l < ifd->tileOffsets.size(); ++i_l)
-            {
-                // in this level, iterate over all y Tiles
-                for (size_t i_dy = 0;
-                     i_dy < ifd->tileOffsets[i_l].size(); ++i_dy)
-                {
-                    // and iterate over all x Tiles
-                    for (size_t i_dx = 0;
-                         i_dx < ifd->tileOffsets[i_l][i_dy].size(); ++i_dx)
-                    {
-                        Xdr::read <StreamIO> (*ifd->is,
-                                ifd->tileOffsets[i_l][i_dy][i_dx]);
-                    }
-                }
-            }
-
-            //
-            // Error check the tile offsets
-            //
-            int error = false;
-
-            // iterator over all levels
-            for (size_t i_l = 0; i_l < ifd->tileOffsets.size() && !error;
-                 ++i_l)
-            {
-                // in this level, iterate over all y Tiles
-                for (size_t i_dy = 0;
-                     i_dy < ifd->tileOffsets[i_l].size() && !error; ++i_dy)
-                {
-                    // and iterate over all x Tiles
-                    for (size_t i_dx = 0;
-                         i_dx < ifd->tileOffsets[i_l][i_dy].size() && !error;
-                         ++i_dx)
-                    {
-                        if (ifd->tileOffsets[i_l][i_dy][i_dx] <= 0)
-                        {
-                            //
-                            // Invalid data in the line offset table mean that
-                            // the file is probably incomplete (the table is
-                            // the last thing written to the file).  Either
-                            // some process is still busy writing the file,
-                            // or writing the file was aborted.
-                            //
-                            // We should still be able to read the existing
-                            // parts of the file.  In order to do this, we
-                            // have to make a sequential scan over the scan
-                            // line data to reconstruct the line offset table.
-                            //
-
-                            error = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (error)
-                reconstructTileOffsets (ifd);
-        }
-        break;
-
-      case RIPMAP_LEVELS:
-
-        {
-            //
-            // Read in the tile offsets from the file's index
-            //
-
-            // iterator over all ly's
-            for (size_t i_ly = 0; i_ly < ifd->numYLevels; ++i_ly)
-            {
-                // iterator over all lx's
-                for (size_t i_lx = 0; i_lx < ifd->numXLevels; ++i_lx)
-                {
-                    int index = i_ly*ifd->numXLevels + i_lx;
-
-                    // and iterator over all y Tiles in level (i_lx, i_ly)
-                    for (size_t i_dy = 0;
-                         i_dy < ifd->tileOffsets[index].size(); ++i_dy)
-                    {
-                        // and iterate over all x Tiles
-                        for (size_t i_dx = 0;
-                             i_dx < ifd->tileOffsets[index][i_dy].size(); ++i_dx)
-                        {
-                            Xdr::read <StreamIO> (*ifd->is,
-                                ifd->tileOffsets[index][i_dy][i_dx]);
-                        }
-                    }
-                }
-            }
-
-            //
-            // Error check the tile offsets
-            //
-            int error = false;
-
-	    // FIXME, add a function to the 3d tileoffset class that checks for errors, and use that
-            // iterator over all ly's
-            for (size_t i_ly = 0; i_ly < ifd->numYLevels && !error; ++i_ly)
-            {
-                // iterator over all lx's
-                for (size_t i_lx = 0; i_lx < ifd->numXLevels && !error; ++i_lx)
-                {
-                    int index = i_ly*ifd->numXLevels + i_lx;
-
-                    // and iterator over all y Tiles in level (i_lx, i_ly)
-                    for (size_t i_dy = 0;
-                         i_dy < ifd->tileOffsets[index].size() && !error;
-                         ++i_dy)
-                    {
-                        // and iterate over all x Tiles
-                        for (size_t i_dx = 0;
-                             i_dx < ifd->tileOffsets[index][i_dy].size() && !error;
-                             ++i_dx)
-                        {
-                            if (ifd->tileOffsets[index][i_dy][i_dx] <= 0)
-                            {
-                                //
-                                // Invalid data in the line offset table mean that
-                                // the file is probably incomplete (the table is
-                                // the last thing written to the file).  Either
-                                // some process is still busy writing the file,
-                                // or writing the file was aborted.
-                                //
-                                // We should still be able to read the existing
-                                // parts of the file.  In order to do this, we
-                                // have to make a sequential scan over the scan
-                                // line data to reconstruct the line offset table.
-                                //
-
-                                error = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (error)
-                reconstructTileOffsets (ifd);
-        }
-        break;
-
-     default:
-
-        throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-}
-
 
 // done, i think
 //
@@ -698,7 +209,7 @@ readTileData (TiledInputFile::Data *ifd, int dx, int dy, int lx, int ly,
     // seek to that position if necessary
     //
     
-    long tileOffset = getTileOffset(ifd, dx, dy, lx, ly);
+    long tileOffset = ifd->tileOffsets(dx, dy, lx, ly);
 
     if (tileOffset == 0)
         THROW (Iex::InputExc, "Tile (" << dx << "," << dy << "," << lx <<
@@ -875,8 +386,12 @@ TiledInputFile::TiledInputFile (const char fileName[]) :
 
 	_data->uncompressedData = 0;
 
-	resizeTileOffsets(_data);
-	readTileOffsets(_data);
+	_data->tileOffsets = TileOffsets(_data->tileDesc.mode,
+					 _data->numXLevels,
+					 _data->numYLevels,
+					 _data->numXTiles,
+					 _data->numYTiles);
+	_data->tileOffsets.readFrom(*(_data->is));
 
 	_data->currentPosition = _data->is->tellg();
     }
@@ -948,8 +463,12 @@ TiledInputFile::TiledInputFile (const char fileName[],
 
     _data->uncompressedData = 0;
 
-    resizeTileOffsets(_data);
-    readTileOffsets(_data);
+    _data->tileOffsets = TileOffsets(_data->tileDesc.mode,
+				     _data->numXLevels,
+				     _data->numYLevels,
+				     _data->numXTiles,
+				     _data->numYTiles);
+    _data->tileOffsets.readFrom(*(_data->is));
 
     _data->currentPosition = _data->is->tellg();
 }
