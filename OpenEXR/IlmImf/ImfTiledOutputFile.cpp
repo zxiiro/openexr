@@ -44,6 +44,7 @@
 #include <ImfTiledInputFile.h>
 #include <ImfInputFile.h>
 #include <ImfTileDescriptionAttribute.h>
+#include <ImfPreviewImageAttribute.h>
 #include <ImfChannelList.h>
 #include <ImfMisc.h>
 #include <ImfTiledMisc.h>
@@ -52,6 +53,7 @@
 #include <ImathBox.h>
 #include <ImfArray.h>
 #include <ImfXdr.h>
+#include <ImfVersion.h>
 #include <Iex.h>
 #include <string>
 #include <vector>
@@ -168,6 +170,7 @@ public:
     Header		header;			// the image header
     TileDescription	tileDesc;		// describes the tile layout
     FrameBuffer		frameBuffer;		// framebuffer to write into
+    long                 previewPosition;
     LineOrder		lineOrder;		// the file's lineorder
     int			minX;			// data window's min x coord
     int			maxX;			// data window's max x coord
@@ -598,6 +601,7 @@ TiledOutputFile::TiledOutputFile (const char fileName[], const Header &header):
 	if (!_data->os)
 	    Iex::throwErrnoExc();
 
+        _data->previewPosition =
 	_data->header.writeTo(_data->os, true);
 
 	_data->tileOffsetsPosition = _data->tileOffsets.writeTo(_data->os);
@@ -1387,6 +1391,57 @@ TiledOutputFile::isValidTile(int dx, int dy, int lx, int ly) const
 	    (ly < numYLevels() && ly >= 0) &&
 	    (dx < numXTiles(lx) && dx >= 0) &&
 	    (dy < numYTiles(ly) && dy >= 0));
+}
+
+
+void
+TiledOutputFile::updatePreviewImage (const PreviewRgba newPixels[])
+{
+    if (_data->previewPosition <= 0)
+    {
+	THROW (Iex::LogicExc, "Cannot update preview image pixels. "
+			      "File \"" << fileName() << "\" does not "
+			      "contain a preview image.");
+    }
+
+    //
+    // Store the new pixels in the header's preview image attribute.
+    //
+
+    PreviewImageAttribute &pia =
+	_data->header.typedAttribute <PreviewImageAttribute> ("preview");
+
+    PreviewImage &pi = pia.value();
+    PreviewRgba *pixels = pi.pixels();
+    int numPixels = pi.width() * pi.height();
+
+    for (int i = 0; i < numPixels; ++i)
+	pixels[i] = newPixels[i];
+
+    //
+    // Save the current file position, jump to the position in
+    // the file where the preview image starts, store the new
+    // preview image, and jump back to the saved file position.
+    //
+
+    long savedPosition = _data->os.tellp();
+
+    try
+    {
+	_data->os.seekp (_data->previewPosition);
+	checkError (_data->os);
+
+	pia.writeValueTo (_data->os, VERSION);
+
+	_data->os.seekp (savedPosition);
+	checkError (_data->os);
+    }
+    catch (Iex::BaseExc &e)
+    {
+	REPLACE_EXC (e, "Cannot update preview image pixels for "
+			"file \"" << fileName() << "\". " << e);
+	throw;
+    }
 }
 
 

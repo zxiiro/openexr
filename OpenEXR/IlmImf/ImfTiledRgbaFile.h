@@ -61,6 +61,7 @@ namespace Imf {
 
 class TiledOutputFile;
 class TiledInputFile;
+class PreviewRgba;
 
 //
 // RGBA output file.
@@ -337,6 +338,13 @@ class TiledRgbaOutputFile
 
     void		writeTile (int dx, int dy, int l = 0);
     void		writeTile (int dx, int dy, int lx, int ly);
+
+
+    // --------------------------------------------------------------------
+    // Update the preview image (see Imf::OutputFile::updatePreviewImage())
+    // --------------------------------------------------------------------
+
+    void			updatePreviewImage (const PreviewRgba[]);
 
   private:
 

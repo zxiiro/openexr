@@ -636,5 +636,11 @@ TiledRgbaInputFile::readTile (int dx, int dy, int lx, int ly)
      return _inputFile->readTile(dx, dy, lx, ly);
 }
 
+void		
+TiledRgbaOutputFile::updatePreviewImage (const PreviewRgba newPixels[])
+{
+    _outputFile->updatePreviewImage (newPixels);
+}
+
 
 } // namespace Imf
