@@ -126,17 +126,26 @@ fillPixels4 (Array2D<unsigned int> &pi,
     Rand48 rand;
 
     for (int y = 0; y < height; ++y)
-	for (int x = 0; x < width; ++x)
-	{
-	    pi[y][x] = rand.nexti();
+        for (int x = 0; x < width; ++x)
+        {
+            pi[y][x] = rand.nexti();
 
-	    ph[y][x].setBits (rand.nexti());
+            do
+            {
+                ph[y][x].setBits (rand.nexti());
+            }
+            while (ph[y][x].isNan());
 
-	    union {int i; float f;} u;
-	    u.i = rand.nexti();
+            union {int i; float f;} u;
 
-	    pf[y][x] = u.f;
-	}
+            do
+            {
+                u.i = rand.nexti();
+                pf[y][x] = u.f;
+            }
+            while (isnan(pf[y][x]));
+
+        }
 }
 
 

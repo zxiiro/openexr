@@ -68,14 +68,6 @@ inline T max (const T &a, const T &b) { return (a >= b) ? a : b; }
 
 namespace {
 
-double get_cpu_time()
-{
-    struct rusage t;
-    getrusage(RUSAGE_SELF, &t);
-    return (double)t.ru_utime.tv_sec + (double)t.ru_utime.tv_usec/1000000;
-}
-
-
 void
 fillPixels (Array2D<unsigned int> &pi,
             Array2D<half> &ph,
@@ -257,7 +249,7 @@ writeRead (const Array2D<unsigned int> &pi1,
     }
 
     {
-        cout << " reading" << flush;
+        cout << " reading INCREASING_Y" << flush;
 
         InputFile in (fileName);
 
@@ -296,6 +288,85 @@ writeRead (const Array2D<unsigned int> &pi1,
 
         in.setFrameBuffer (fb);
         for (int y = dw.min.y; y <= dw.max.y; ++y)
+            in.readPixels (y);
+
+        cout << " comparing" << flush;
+
+        assert (in.header().displayWindow() == hdr.displayWindow());
+        assert (in.header().dataWindow() == hdr.dataWindow());
+        assert (in.header().pixelAspectRatio() == hdr.pixelAspectRatio());
+        assert (in.header().screenWindowCenter() == hdr.screenWindowCenter());
+        assert (in.header().screenWindowWidth() == hdr.screenWindowWidth());
+        assert (in.header().lineOrder() == hdr.lineOrder());
+        assert (in.header().compression() == hdr.compression());
+
+        ChannelList::ConstIterator hi = hdr.channels().begin();
+        ChannelList::ConstIterator ii = in.header().channels().begin();
+
+        while (hi != hdr.channels().end())
+        {
+            assert (!strcmp (hi.name(), ii.name()));
+            assert (hi.channel().type == ii.channel().type);
+            assert (hi.channel().xSampling == ii.channel().xSampling);
+            assert (hi.channel().ySampling == ii.channel().ySampling);
+
+            ++hi;
+            ++ii;
+        }
+
+        assert (ii == in.header().channels().end());
+
+        for (int y = 0; y < h; ++y)
+        {
+            for (int x = 0; x < w; ++x)
+            {
+                assert (pi1[y][x] == pi2[y][x]);
+                assert (ph1[y][x] == ph2[y][x]);
+                assert (pf1[y][x] == pf2[y][x]);
+            }
+        }    
+    }
+
+    {
+        cout << endl << "         reading DECREASING_Y" << flush;
+
+        InputFile in (fileName);
+
+        const Box2i &dw = in.header().dataWindow();
+        int w = dw.max.x - dw.min.x + 1;
+        int h = dw.max.y - dw.min.y + 1;
+        int dwx = dw.min.x;
+        int dwy = dw.min.y;
+
+        Array2D<unsigned int> pi2 (h, w);
+        Array2D<half>         ph2 (h, w);
+        Array2D<float>        pf2 (h, w);
+
+        FrameBuffer fb;
+
+        fb.insert ("I",                             // name
+                   Slice (UINT,                     // type
+                          (char *) &pi2[-dwy][-dwx],// base
+                          sizeof (pi2[0][0]),      // xStride
+                          sizeof (pi2[0][0]) * w)  // yStride
+                  );
+
+        fb.insert ("H",                             // name
+                   Slice (HALF,                     // type
+                          (char *) &ph2[-dwy][-dwx],// base
+                          sizeof (ph2[0][0]),      // xStride
+                          sizeof (ph2[0][0]) * w)  // yStride
+                  );
+
+        fb.insert ("F",                             // name
+                   Slice (FLOAT,                    // type
+                          (char *) &pf2[-dwy][-dwx],// base
+                          sizeof (pf2[0][0]),      // xStride
+                          sizeof (pf2[0][0]) * w)  // yStride
+                  );
+
+        in.setFrameBuffer (fb);
+        for (int y = dw.max.y; y >= dw.min.y; --y)
             in.readPixels (y);
 
         cout << " comparing" << flush;
@@ -385,7 +456,6 @@ testScanlineAPI ()
         Array2D<float> pf (H, W);
         fillPixels (pi, ph, pf, W, H);
 
-        double t = get_cpu_time();
         for (int comp = 0; comp < NUM_COMPRESSION_METHODS; ++comp)
         {
             if (comp == ZIP_COMPRESSION)
@@ -414,7 +484,6 @@ testScanlineAPI ()
                            LineOrder (lorder), Compression (comp), DX, DY, 128, 96);
             }
         }
-        std::cout << "time = " << get_cpu_time() - t << std::endl;
 
         cout << "ok\n" << endl;
     }

@@ -41,6 +41,7 @@
 #include <ImfChannelList.h>
 #include <ImfArray.h>
 #include <half.h>
+#include <ImathRandom.h>
 #include <ImfTileDescriptionAttribute.h>
 
 #include <stdio.h>
@@ -106,6 +107,48 @@ fillPixels3 (Array2D<unsigned int> &pi,
 	    ph[y][x] = sin (double (x)) + sin (y * 0.5);
 	    pf[y][x] = sin (double (y)) + sin (x * 0.5);
 	}
+}
+
+
+void
+fillPixels4 (Array2D<unsigned int> &pi,
+	     Array2D<half> &ph,
+	     Array2D<float> &pf,
+	     int width,
+	     int height)
+{
+    cout << "random bits" << endl;
+
+    //
+    // Use of a union to extract the bit pattern from a float, as is
+    // done below, works only if int and float have the same size.
+    //
+
+    assert (sizeof (int) == sizeof (float));
+
+    Rand48 rand;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            pi[y][x] = rand.nexti();
+
+            do
+            {
+                ph[y][x].setBits (rand.nexti());
+            }
+            while (ph[y][x].isNan());
+
+            union {int i; float f;} u;
+
+            do
+            {
+                u.i = rand.nexti();
+                pf[y][x] = u.f;
+            }
+            while (isnan(pf[y][x]));
+
+        }
 }
 
 
@@ -185,14 +228,12 @@ writeRead (const Array2D<unsigned int> &pi1,
         {
             startTileY = out.numYTiles() - 1;
             endTileY = -1;
-
             dy = -1;
         }        
         else
         {
             startTileY = 0;
             endTileY = out.numYTiles();
-
             dy = 1;
         }
     
@@ -221,26 +262,25 @@ writeRead (const Array2D<unsigned int> &pi1,
         fb.insert ("I",                             // name
                    Slice (UINT,                     // type
                           (char *) &pi2[-dwy][-dwx],// base
-                          sizeof (pi2[0][0]),      // xStride
-                          sizeof (pi2[0][0]) * w)  // yStride
+                          sizeof (pi2[0][0]),       // xStride
+                          sizeof (pi2[0][0]) * w)   // yStride
                   );
 
         fb.insert ("H",                             // name
                    Slice (HALF,                     // type
                           (char *) &ph2[-dwy][-dwx],// base
-                          sizeof (ph2[0][0]),      // xStride
-                          sizeof (ph2[0][0]) * w)  // yStride
+                          sizeof (ph2[0][0]),       // xStride
+                          sizeof (ph2[0][0]) * w)   // yStride
                   );
 
         fb.insert ("F",                             // name
                    Slice (FLOAT,                    // type
                           (char *) &pf2[-dwy][-dwx],// base
-                          sizeof (pf2[0][0]),      // xStride
-                          sizeof (pf2[0][0]) * w)  // yStride
+                          sizeof (pf2[0][0]),       // xStride
+                          sizeof (pf2[0][0]) * w)   // yStride
                   );
 
         in.setFrameBuffer (fb);
-        //in.readPixels (dw.min.y, dw.max.y);
         
         int startTileY, endTileY;
         int dy;
@@ -249,14 +289,12 @@ writeRead (const Array2D<unsigned int> &pi1,
         {
             startTileY = in.numYTiles() - 1;
             endTileY = -1;
-
             dy = -1;
         }        
         else
         {
             startTileY = 0;
             endTileY = in.numYTiles();
-
             dy = 1;
         }
     
@@ -346,10 +384,10 @@ testTiledCompression ()
     {
         cout << "Testing pixel data types and datawindow offsets for Tiled files" << endl;
 
-        const int W = 1371;
-        const int H = 159;
-        const int DX = -17;
-        const int DY = -29;
+        const int W = 171;
+        const int H = 59;
+        const int DX[] = {-17, 0, 23};
+        const int DY[] = {-29, 0, 13};
         const int XS = 15;
         const int YS = 15;
 
@@ -364,15 +402,23 @@ testTiledCompression ()
         //
 
         assert (NUM_PIXELTYPES == 3);
+        
+        for (int i = 0; i < 3; ++i)
+        {
+            cout << endl << "xOffset = " << DX[i] <<
+                    ", yOffset = " << DY[i] << endl;
+            fillPixels1 (pi, ph, pf, W, H);
+            writeRead (pi, ph, pf, W, H, XS, YS, DX[i], DY[i]);
 
-        fillPixels1 (pi, ph, pf, W, H);
-        writeRead (pi, ph, pf, W, H, XS, YS, DX, DY);
+            fillPixels2 (pi, ph, pf, W, H);
+            writeRead (pi, ph, pf, W, H, XS, YS, DX[i], DY[i]);
 
-        fillPixels2 (pi, ph, pf, W, H);
-        writeRead (pi, ph, pf, W, H, XS, YS, DX, DY);
+            fillPixels3 (pi, ph, pf, W, H);
+            writeRead (pi, ph, pf, W, H, XS, YS, DX[i], DY[i]);
 
-        fillPixels3 (pi, ph, pf, W, H);
-        writeRead (pi, ph, pf, W, H, XS, YS, DX, DY);
+            fillPixels4 (pi, ph, pf, W, H);
+            writeRead (pi, ph, pf, W, H, XS, YS, DX[i], DY[i]);
+        }
 
         cout << "ok\n" << endl;
     }

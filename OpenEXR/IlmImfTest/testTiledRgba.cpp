@@ -62,17 +62,6 @@ inline T max (const T &a, const T &b) { return (a >= b) ? a : b; }
 
 namespace {
 
-
-double get_cpu_time()
-{
-    struct rusage t;
-
-    getrusage(RUSAGE_SELF, &t);
-
-    return (double)t.ru_utime.tv_sec + (double)t.ru_utime.tv_usec/1000000;
-}
-
-
 void
 fillPixels (Array2D<Rgba> &pixels, int w, int h)
 {
@@ -98,74 +87,38 @@ writeReadRGBAONE (const char fileName[],
 	       RgbaChannels channels,
 	       LineOrder lorder,
 	       Compression comp,
-           int xSize, int ySize,
-           bool triggerBuffering, bool triggerSeeks)
+           int xSize, int ySize)
 {
-#ifdef PLATFORM_WIN32
-    string tmpfile;
-#else
-    string tmpfile ("/var/tmp/");
-#endif
-    tmpfile.append (fileName);
-
-    
-    Array2D<Rgba> p1 (height, width);
-	fillPixels (p1, width, height);
-    
-    //
-    // Save the selected channels of RGBA image p1; save the
-    // scan lines in the specified order.  Read the image back
-    // from the file, and compare the data with the orignal.
-    //
-
-    cout << "levelMode 0, " << "tileSize " << xSize << "x" << ySize <<
+    cout << "levelMode 0, " <<
             ", line order " << lorder <<
-            ", compression " << comp << endl;
+            ", compression " << comp <<
+            ", tileSize " << xSize << "x" << ySize << endl;
 
     Header header (width, height);
     header.lineOrder() = lorder;
     header.compression() = comp;
+    
+    Array2D<Rgba> p1 (height, width);
 
     {
-        remove (tmpfile.c_str ());
-        TiledRgbaOutputFile out (tmpfile.c_str (), header, channels, xSize, ySize, ONE_LEVEL);
+        cout << " writing" << flush;
+ 
+        remove (fileName);
+        TiledRgbaOutputFile out (fileName, header, channels,
+                                 xSize, ySize, ONE_LEVEL);
+        
+        fillPixels (p1, width, height);
         out.setFrameBuffer (&p1[0][0], 1, width);
 
-        int i;
-        
-        Rand32 rand1 = Rand32();
-        std::vector<int> tileYs = std::vector<int>(out.numYTiles());
-        std::vector<int> tileXs = std::vector<int>(out.numXTiles());
-        for (i = 0; i < out.numYTiles(); i++)
-        {
-            if (lorder == DECREASING_Y)
-                tileYs[out.numYTiles()-1-i] = i;    
-            else
-                tileYs[i] = i;
-        }
-
-        for (i = 0; i < out.numXTiles(); i++)
-        {
-            tileXs[i] = i;
-        }
-        
-        if (triggerBuffering)
-        {
-            // shuffle the tile orders
-            for (i = 0; i < out.numYTiles(); i++)
-                std::swap(tileYs[i], tileYs[int(rand1.nextf(i,out.numYTiles()-1) + 0.5)]);
-
-            for (i = 0; i < out.numXTiles(); i++)
-                std::swap(tileXs[i], tileXs[int(rand1.nextf(i,out.numXTiles()-1) + 0.5)]);
-        }
-
-        for (int tileY = 0; tileY < out.numYTiles(); tileY++)
-            for (int tileX = 0; tileX < out.numXTiles(); tileX++)
-                out.writeTile (tileXs[tileX], tileYs[tileY]);
+        for (int tileY = 0; tileY < out.numYTiles(); ++tileY)
+            for (int tileX = 0; tileX < out.numXTiles(); ++tileX)
+                out.writeTile (tileX, tileY);
     }
 
     {
-        TiledRgbaInputFile in (tmpfile.c_str ());
+        cout << " reading" << flush;
+
+        TiledRgbaInputFile in (fileName);
         const Box2i &dw = in.dataWindow();
 
         int w = dw.max.x - dw.min.x + 1;
@@ -175,30 +128,12 @@ writeReadRGBAONE (const char fileName[],
 
         Array2D<Rgba> p2 (h, w);
         in.setFrameBuffer (&p2[-dwy][-dwx], 1, w);
-        
-        int startTileY, endTileY;
-        int dy;
-
-        if ((lorder == DECREASING_Y && !triggerSeeks) ||
-            (lorder == INCREASING_Y && triggerSeeks) ||
-            (lorder == RANDOM_Y && triggerSeeks))
-        {
-            startTileY = in.numYTiles() - 1;
-            endTileY = -1;
-
-            dy = -1;
-        }        
-        else
-        {
-            startTileY = 0;
-            endTileY = in.numYTiles();
-
-            dy = 1;
-        }
     
-        for (int tileY = startTileY; tileY != endTileY; tileY += dy)
+        for (int tileY = 0; tileY != in.numYTiles(); ++tileY)
             for (int tileX = 0; tileX < in.numXTiles(); ++tileX)
                 in.readTile (tileX, tileY);
+
+        cout << " comparing" << endl << flush;               
 
         assert (in.displayWindow() == header.displayWindow());
         assert (in.dataWindow() == header.dataWindow());
@@ -236,7 +171,7 @@ writeReadRGBAONE (const char fileName[],
         }
     }
 
-    remove (tmpfile.c_str ());
+    remove (fileName);
 }
 
 
@@ -248,99 +183,48 @@ writeReadRGBAMIP (const char fileName[],
 	       RgbaChannels channels,
 	       LineOrder lorder,
 	       Compression comp,
-           int xSize, int ySize,
-           bool triggerBuffering, bool triggerSeeks)
+           int xSize, int ySize)
 {
-#ifdef PLATFORM_WIN32
-    string tmpfile;
-#else
-    string tmpfile ("/var/tmp/");
-#endif
-    tmpfile.append (fileName);
-
-    int num;
-#ifdef PLATFORM_WIN32
-    num = (int) floor (log (float(max (width, height))) / log (2.0)) + 1;
-#else
-    num = (int) floor (log (float(std::max (width, height))) / log (2.0)) + 1;
-#endif
-
-    std::vector< Array2D<Rgba> > levels(num, Array2D<Rgba> ());
-    for (int i = 0; i < num; ++i)
-    {
-        int w = width / (1 << i);
-        int h = height / (1 << i);
-        levels[i].resizeErase(h, w);
-        fillPixels (levels[i], w, h);
-    }
-
-    //
-    // Save the selected channels of RGBA image p1; save the
-    // scan lines in the specified order.  Read the image back
-    // from the file, and compare the data with the orignal.
-    //
-
-    cout << "levelMode 1, " << "tileSize " << xSize << "x" << ySize <<
+    cout << "levelMode 1, " <<
             ", line order " << lorder <<
-            ", compression " << comp << endl;
+            ", compression " << comp <<
+            ", tileSize " << xSize << "x" << ySize << endl;
 
     Header header (width, height);
     header.lineOrder() = lorder;
     header.compression() = comp;
+    
+    std::vector< Array2D<Rgba> > levels;
 
     {
-        remove (tmpfile.c_str ());
-        TiledRgbaOutputFile out (tmpfile.c_str (), header, channels, xSize, ySize, MIPMAP_LEVELS);
-        
-        int i;
-        
-        Rand32 rand1 = Rand32();
-        std::vector<int> shuffled_levels = std::vector<int>(out.numLevels());
-        
-        for (i = 0; i < out.numLevels(); i++)
-            shuffled_levels[i] = i;
+        cout << " writing" << flush;
 
-        if (triggerBuffering)
-            // shuffle the level order
-            for (i = 0; i < out.numLevels(); i++)
-                std::swap(shuffled_levels[i], shuffled_levels[int(rand1.nextf(i,out.numLevels()-1) + 0.5)]);
+        remove (fileName);
+        TiledRgbaOutputFile out (fileName, header, channels,
+                                 xSize, ySize, MIPMAP_LEVELS);
+        
+        int numLevels = out.numLevels();
+        levels = std::vector< Array2D<Rgba> >(numLevels, Array2D<Rgba> ());
 
         for (int level = 0; level < out.numLevels(); ++level)
         {
-            const int slevel = shuffled_levels[level];
-            out.setFrameBuffer (&(levels[slevel])[0][0], 1, width / (1 << slevel));
+            int levelWidth  = out.levelWidth(level);
+            int levelHeight = out.levelHeight(level);
+            levels[level].resizeErase(levelHeight, levelWidth);
+            fillPixels (levels[level], levelWidth, levelHeight);
+        
+            out.setFrameBuffer (&(levels[level])[0][0], 1, levelWidth);
 
-            std::vector<int> tileYs = std::vector<int>(out.numYTiles(slevel));
-            std::vector<int> tileXs = std::vector<int>(out.numXTiles(slevel));
-            for (i = 0; i < out.numYTiles(slevel); i++)
-            {
-                if (lorder == DECREASING_Y)
-                    tileYs[out.numYTiles(slevel)-1-i] = i;    
-                else
-                    tileYs[i] = i;
-            }
-
-            for (i = 0; i < out.numXTiles(slevel); i++)
-                tileXs[i] = i;
-            
-            if (triggerBuffering)
-            {
-                // shuffle the tile orders
-                for (i = 0; i < out.numYTiles(slevel); i++)
-                    std::swap(tileYs[i], tileYs[int(rand1.nextf(i,out.numYTiles(slevel)-1) + 0.5)]);
-
-                for (i = 0; i < out.numXTiles(slevel); i++)
-                    std::swap(tileXs[i], tileXs[int(rand1.nextf(i,out.numXTiles(slevel)-1) + 0.5)]);
-            }
-
-            for (int tileY = 0; tileY < out.numYTiles(slevel); ++tileY)
-                for (int tileX = 0; tileX < out.numXTiles(slevel); ++tileX)
-                    out.writeTile (tileXs[tileX], tileYs[tileY], slevel);
+            for (int tileY = 0; tileY < out.numYTiles(level); ++tileY)
+                for (int tileX = 0; tileX < out.numXTiles(level); ++tileX)
+                    out.writeTile (tileX, tileY, level);
         }
     }
 
     {
-        TiledRgbaInputFile in (tmpfile.c_str ());
+        cout << " reading" << flush;
+
+        TiledRgbaInputFile in (fileName);
         const Box2i &dw = in.dataWindow();
 
         int w = dw.max.x - dw.min.x + 1;
@@ -348,42 +232,23 @@ writeReadRGBAMIP (const char fileName[],
         int dwx = dw.min.x;
         int dwy = dw.min.y;
 
-        std::vector< Array2D<Rgba> > levels2(num, Array2D<Rgba> ());
-        for (int i = 0; i < num; ++i)
-        {
-            int w1 = w / (1 << i);
-            int h1 = h / (1 << i);
-            levels2[i].resizeErase(h1, w1);
-        }
+        int numLevels = in.numLevels();
+        std::vector< Array2D<Rgba> > levels2(numLevels, Array2D<Rgba> ());
         
-        int startTileY, endTileY;
-        int dy;
-        
-        for (int level = 0; level < in.numLevels(); ++level)
+        for (int level = 0; level < numLevels; ++level)
         {
-            in.setFrameBuffer (&(levels2[level])[-dwy][-dwx], 1, w / (1 << level));
+            int levelWidth = in.levelWidth(level);
+            int levelHeight = in.levelHeight(level);
+            levels2[level].resizeErase(levelHeight, levelWidth);
+        
+            in.setFrameBuffer (&(levels2[level])[-dwy][-dwx], 1, levelWidth);
             
-            if ((lorder == DECREASING_Y && !triggerSeeks) ||
-                (lorder == INCREASING_Y && triggerSeeks) ||
-                (lorder == RANDOM_Y && triggerSeeks))
-            {
-                startTileY = in.numYTiles(level) - 1;
-                endTileY = -1;
-
-                dy = -1;
-            }        
-            else
-            {
-                startTileY = 0;
-                endTileY = in.numYTiles(level);
-
-                dy = 1;
-            }
-            
-            for (int tileY = startTileY; tileY != endTileY; tileY += dy)
+            for (int tileY = 0; tileY < in.numYTiles(level); ++tileY)
                 for (int tileX = 0; tileX < in.numXTiles (level); ++tileX)
                     in.readTile (tileX, tileY, level);
         }
+        
+        cout << " comparing" << endl << flush;
 
         assert (in.displayWindow() == header.displayWindow());
         assert (in.dataWindow() == header.dataWindow());
@@ -394,11 +259,11 @@ writeReadRGBAMIP (const char fileName[],
         assert (in.compression() == header.compression());
         assert (in.channels() == channels);
 
-        for (int l = 0; l < num; ++l)
+        for (int l = 0; l < numLevels; ++l)
         {
-            for (int y = 0; y < (h / (1 << l)); ++y)
+            for (int y = 0; y < in.levelHeight(l); ++y)
             {
-                for (int x = 0; x < (w / (1 << l)); ++x)
+                for (int x = 0; x < in.levelWidth(l); ++x)
                 {
                     if (channels & WRITE_R)
                         assert ((levels2[l])[y][x].r == (levels[l])[y][x].r);
@@ -424,7 +289,7 @@ writeReadRGBAMIP (const char fileName[],
         }
     }
 
-    remove (tmpfile.c_str ());
+    remove (fileName);
 }
 
 
@@ -435,166 +300,83 @@ writeReadRGBARIP (const char fileName[],
 	       RgbaChannels channels,
 	       LineOrder lorder,
 	       Compression comp,
-           int xSize, int ySize,
-           bool triggerBuffering, bool triggerSeeks)
+           int xSize, int ySize)
 {
-#ifdef PLATFORM_WIN32
-    string tmpfile;
-#else
-    string tmpfile ("/var/tmp/");
-#endif
-    tmpfile.append (fileName);
-
-    int numX = (int) floor (log ((float)width) / log (2.0)) + 1;
-    int numY = (int) floor (log ((float)height) / log (2.0)) + 1;
-
-    std::vector< std::vector< Array2D<Rgba> > >
-        levels(numY, std::vector< Array2D<Rgba> >(numX, Array2D<Rgba>()));
-
-    for (int i = 0; i < numY; ++i)
-    {
-        for (int j = 0; j < numX; ++j)
-        {
-            int w = width / (1 << j);
-            int h = height / (1 << i);
-            levels[i][j].resizeErase(h, w);
-            fillPixels (levels[i][j], w, h);
-        }
-    }
-
-    //
-    // Save the selected channels of RGBA image p1; save the
-    // scan lines in the specified order.  Read the image back
-    // from the file, and compare the data with the orignal.
-    //
-
-    cout << "levelMode 2, " << "tileSize " << xSize << "x" << ySize <<
+    cout << "levelMode 2, " <<
             ", line order " << lorder <<
-            ", compression " << comp << endl;
+            ", compression " << comp <<
+            ", tileSize " << xSize << "x" << ySize << endl;
 
     Header header (width, height);
     header.lineOrder() = lorder;
     header.compression() = comp;
+    
+    std::vector< std::vector< Array2D<Rgba> > > levels;
 
     {
-        remove (tmpfile.c_str ());
-        TiledRgbaOutputFile out (tmpfile.c_str (), header, channels, xSize, ySize, RIPMAP_LEVELS);
-        
-        int i;
-        
-        Rand32 rand1 = Rand32();
-        std::vector<int> shuffled_xLevels = std::vector<int>(out.numXLevels());
-        std::vector<int> shuffled_yLevels = std::vector<int>(out.numYLevels());
-        
-        for (i = 0; i < out.numXLevels(); i++)
-            shuffled_xLevels[i] = i;
-        
-        for (i = 0; i < out.numYLevels(); i++)
-            shuffled_yLevels[i] = i;
+        cout << " writing" << flush;
 
-        if (triggerBuffering)
-        {
-            // shuffle the level orders
-            for (i = 0; i < out.numXLevels(); i++)
-                std::swap(shuffled_xLevels[i], shuffled_xLevels[int(rand1.nextf(i,out.numXLevels()-1) + 0.5)]);
-                
-            for (i = 0; i < out.numYLevels(); i++)
-                std::swap(shuffled_yLevels[i], shuffled_yLevels[int(rand1.nextf(i,out.numYLevels()-1) + 0.5)]);
-        }
+        remove (fileName);
+        TiledRgbaOutputFile out (fileName, header, channels,
+                                 xSize, ySize, RIPMAP_LEVELS);
+
+        levels = std::vector< std::vector< Array2D<Rgba> > > (out.numYLevels(),
+                    std::vector< Array2D<Rgba> >(out.numXLevels(),
+                                                 Array2D<Rgba>()));
 
         for (int ylevel = 0; ylevel < out.numYLevels(); ++ylevel)
-        {
-            const int sylevel = shuffled_yLevels[ylevel];
-            
-            std::vector<int> tileYs = std::vector<int>(out.numYTiles(sylevel));
-            for (i = 0; i < out.numYTiles(sylevel); i++)
-            {
-                if (lorder == DECREASING_Y)
-                    tileYs[out.numYTiles(sylevel)-1-i] = i;    
-                else
-                    tileYs[i] = i;
-            }
-            
-            if (triggerBuffering)
-                // shuffle the tile orders
-                for (i = 0; i < out.numYTiles(sylevel); i++)
-                    std::swap(tileYs[i], tileYs[int(rand1.nextf(i,out.numYTiles(sylevel)-1) + 0.5)]);
-            
+        {            
             for (int xlevel = 0; xlevel < out.numXLevels(); ++xlevel)
             {
-                const int sxlevel = shuffled_xLevels[xlevel];
-                
-                out.setFrameBuffer (&(levels[sylevel][sxlevel])[0][0], 1, width / (1 << sxlevel));
-                
-                std::vector<int> tileXs = std::vector<int>(out.numXTiles(sxlevel));
-                for (i = 0; i < out.numXTiles(sxlevel); i++)
-                    tileXs[i] = i;
+                int levelWidth = out.levelWidth(xlevel);
+                int levelHeight = out.levelHeight(ylevel);
+                levels[ylevel][xlevel].resizeErase(levelHeight, levelWidth);
+                fillPixels (levels[ylevel][xlevel], levelWidth, levelHeight);
 
-                if (triggerBuffering)
-                    // shuffle the tile orders
-                    for (i = 0; i < out.numXTiles(sxlevel); i++)
-                        std::swap(tileXs[i], tileXs[int(rand1.nextf(i,out.numXTiles(sxlevel)-1) + 0.5)]);
+                out.setFrameBuffer (&(levels[ylevel][xlevel])[0][0], 1,
+                                    levelWidth);
                 
-                for (int tileY = 0; tileY < out.numYTiles(sylevel); ++tileY)
-                    for (int tileX = 0; tileX < out.numXTiles(sxlevel); ++tileX)
-                        out.writeTile(tileXs[tileX], tileYs[tileY], sxlevel, sylevel);
+                for (int tileY = 0; tileY < out.numYTiles(ylevel); ++tileY)
+                    for (int tileX = 0; tileX < out.numXTiles(xlevel); ++tileX)
+                        out.writeTile(tileX, tileY, xlevel, ylevel);
             }
         }
     }
 
     {
-        TiledRgbaInputFile in (tmpfile.c_str ());
+        cout << " reading" << flush;
+
+        TiledRgbaInputFile in (fileName);
         const Box2i &dw = in.dataWindow();
         int w = dw.max.x - dw.min.x + 1;
         int h = dw.max.y - dw.min.y + 1;
         int dwx = dw.min.x;
         int dwy = dw.min.y;        
         
+        int numXLevels = in.numXLevels();
+        int numYLevels = in.numYLevels();
         std::vector< std::vector< Array2D<Rgba> > >
-            levels2(numY, std::vector< Array2D<Rgba> >(numX, Array2D<Rgba>()));
-
-        for (int i = 0; i < numY; ++i)
+            levels2(numYLevels,
+                    std::vector< Array2D<Rgba> >(numXLevels,
+                                                 Array2D<Rgba>()));
+        
+        for (int ylevel = 0; ylevel < numYLevels; ++ylevel)
         {
-            for (int j = 0; j < numX; ++j)
+            for (int xlevel = 0; xlevel < numXLevels; ++xlevel)
             {
-                int w = width / (1 << j);
-                int h = height / (1 << i);
-                levels2[i][j].resizeErase(h, w);
-            }
-        }        
-        
-        int startTileY, endTileY;
-        int dy;
-        
-        for (int ylevel = 0; ylevel < in.numYLevels(); ++ylevel)
-        {
-        
-            if ((lorder == DECREASING_Y && !triggerSeeks) ||
-                (lorder == INCREASING_Y && triggerSeeks) ||
-                (lorder == RANDOM_Y && triggerSeeks))
-            {
-                startTileY = in.numYTiles(ylevel) - 1;
-                endTileY = -1;
-
-                dy = -1;
-            }        
-            else
-            {
-                startTileY = 0;
-                endTileY = in.numYTiles(ylevel);
-
-                dy = 1;
-            }
-            
-            for (int xlevel = 0; xlevel < in.numXLevels(); ++xlevel)
-            {
-                in.setFrameBuffer (&(levels2[ylevel][xlevel])[-dwy][-dwx], 1, w / (1 << xlevel));
+                int levelWidth  = in.levelWidth(xlevel);
+                int levelHeight = in.levelHeight(ylevel);
+                levels2[ylevel][xlevel].resizeErase(levelHeight, levelWidth);
+                in.setFrameBuffer (&(levels2[ylevel][xlevel])[-dwy][-dwx], 1,
+                                   levelWidth);
                 
-                for (int tileY = startTileY; tileY != endTileY; tileY += dy)
+                for (int tileY = 0; tileY < in.numYTiles(ylevel); ++tileY)
                     for (int tileX = 0; tileX < in.numXTiles (xlevel); ++tileX)
                         in.readTile (tileX, tileY, xlevel, ylevel);
             }
         }
+
+        cout << " comparing" << endl << flush;
 
         assert (in.displayWindow() == header.displayWindow());
         assert (in.dataWindow() == header.dataWindow());
@@ -605,31 +387,35 @@ writeReadRGBARIP (const char fileName[],
         assert (in.compression() == header.compression());
         assert (in.channels() == channels);
 
-        for (int ly = 0; ly < numY; ++ly)
+        for (int ly = 0; ly < numYLevels; ++ly)
         {
-            for (int lx = 0; lx < numX; ++lx)
+            for (int lx = 0; lx < numXLevels; ++lx)
             {
-                for (int y = 0; y < (h / (1 << ly)); ++y)
+                for (int y = 0; y < in.levelHeight(ly); ++y)
                 {
-                    for (int x = 0; x < (w / (1 << lx)); ++x)
+                    for (int x = 0; x < in.levelWidth(lx); ++x)
                     {
                         if (channels & WRITE_R)
-                            assert ((levels2[ly][lx])[y][x].r == (levels[ly][lx])[y][x].r);
+                            assert ((levels2[ly][lx])[y][x].r ==
+                                    (levels[ly][lx])[y][x].r);
                         else
                             assert ((levels2[ly][lx])[y][x].r == 0);
 
                         if (channels & WRITE_G)
-                            assert ((levels2[ly][lx])[y][x].g == (levels[ly][lx])[y][x].g);
+                            assert ((levels2[ly][lx])[y][x].g ==
+                                    (levels[ly][lx])[y][x].g);
                         else
                             assert ((levels2[ly][lx])[y][x].g == 0);
 
                         if (channels & WRITE_B)
-                            assert ((levels2[ly][lx])[y][x].b == (levels[ly][lx])[y][x].b);
+                            assert ((levels2[ly][lx])[y][x].b ==
+                                    (levels[ly][lx])[y][x].b);
                         else
                             assert ((levels2[ly][lx])[y][x].b == 0);
 
                         if (channels & WRITE_A)
-                            assert ((levels2[ly][lx])[y][x].a == (levels[ly][lx])[y][x].a);
+                            assert ((levels2[ly][lx])[y][x].a ==
+                                    (levels[ly][lx])[y][x].a);
                         else
                             assert ((levels2[ly][lx])[y][x].a == 1);
                     }
@@ -638,32 +424,30 @@ writeReadRGBARIP (const char fileName[],
         }
     }
 
-    remove (tmpfile.c_str ());
+    remove (fileName);
 }
 
 void
-writeRead (const char fileName[],
-	       int W,
-	       int H,
-	       LineOrder lorder,
-	       Compression comp,
-           int xSize, int ySize,
-           bool triggerBuffering, bool triggerSeeks)
+writeRead (int W, int H, Compression comp, int xSize, int ySize)
 {
-    writeReadRGBAONE ("imf_test_tiled_rgba.exr",
-                      W, H, WRITE_RGBA, LineOrder (lorder), Compression (comp),
-                      xSize, ySize, triggerBuffering, triggerSeeks);
+#ifdef PLATFORM_WIN32
+    const char * filename = "imf_test_tiled_rgba.exr";
+#else
+    const char * filename = "/var/tmp/imf_test_tiled_rgba.exr";
+#endif
 
-    writeReadRGBAMIP ("imf_test_tiled_rgba.exr",
-                      W, H, WRITE_RGBA, LineOrder (lorder), Compression (comp),
-                      xSize, ySize, triggerBuffering, triggerSeeks);
+    writeReadRGBAONE (filename, W, H, WRITE_RGBA, INCREASING_Y,
+                      comp, xSize, ySize);
 
-    writeReadRGBARIP ("imf_test_tiled_rgba.exr",
-                      W, H, WRITE_RGBA, LineOrder (lorder), Compression (comp),
-                      xSize, ySize, triggerBuffering, triggerSeeks);
+    writeReadRGBAMIP (filename, W, H, WRITE_RGBA, INCREASING_Y,
+                      comp, xSize, ySize);
+
+    writeReadRGBARIP (filename, W, H, WRITE_RGBA, INCREASING_Y,
+                      comp, xSize, ySize);
 }
 
 } // namespace
+
 
 
 void
@@ -671,38 +455,28 @@ testTiledRgba ()
 {
     try
     {
-        cout << "Testing the Tiled/Multi-Resolution RGBA image interface" << endl;
+        cout << "Testing the Tiled/Multi-Resolution RGBA image interface" <<
+                endl;
 
-        const int W = 75;
-        const int H = 52;
+        const int W[] = { 69, 75, 80 };
+        const int H[] = { 50, 52, 55 };
 
-
-        double t = get_cpu_time();
-        for (int comp = 0; comp < NUM_COMPRESSION_METHODS; ++comp)
+        for (int i = 0; i < 3; ++i)
         {
-            if (comp == ZIP_COMPRESSION)
-                comp++;
-            
-            for (int lorder = 0; lorder < NUM_LINEORDERS; ++lorder)
-            {                
-                writeRead ("imf_test_tiled_rgba.exr",
-                           W, H, LineOrder (lorder), Compression (comp),
-                           1, 1, false, false);
-                
-                writeRead ("imf_test_tiled_rgba.exr",
-                           W, H, LineOrder (lorder), Compression (comp),
-                           35, 26, false, false);
-                           
-                writeRead ("imf_test_tiled_rgba.exr",
-                           W, H, LineOrder (lorder), Compression (comp),
-                           75, 52, false, false);
-                           
-                writeRead ("imf_test_tiled_rgba.exr",
-                           W, H, LineOrder (lorder), Compression (comp),
-                           264, 129, false, false);
+            cout << endl << "Image size = " << W[i] << " x " << H[i] << endl;
+
+            for (int comp = 0; comp < NUM_COMPRESSION_METHODS; ++comp)
+            {
+                // for tiled files ZIPS and ZIP are the same thing
+                if (comp == ZIP_COMPRESSION)
+                    comp++;
+
+                writeRead (W[i], H[i], Compression (comp), 1, 1);
+                writeRead (W[i], H[i], Compression (comp), 35, 26);
+                writeRead (W[i], H[i], Compression (comp), 75, 52);
+                writeRead (W[i], H[i], Compression (comp), 264, 129);
             }
         }
-        std::cout << "time = " << get_cpu_time() - t << std::endl;
 
         cout << "ok\n" << endl;
     }
