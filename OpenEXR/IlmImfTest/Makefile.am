@@ -12,7 +12,10 @@ IlmImfTest_SOURCES = main.cpp testAttributes.cpp testChannels.cpp \
 		     testLut.h testRgba.h testSampleImages.h testWav.h \
 		     testXdr.h testConversion.cpp testConversion.h \
 		     testNativeFormat.cpp testNativeFormat.h \
-		     testPreviewImage.cpp testPreviewImage.h
+		     testPreviewImage.cpp testPreviewImage.h \
+		     testTiledCompression.cpp testTiledCompression.h \
+		     testScanLineApi.cpp testScanLineApi.h \
+		     testTiledRgba.cpp testTiledRgba.h 
 
 INCLUDES = -I$(top_builddir) -I$(top_srcdir)/Half -I$(top_srcdir)/Iex \
 	   -I$(top_srcdir)/Imath -I$(top_srcdir)/IlmImf
