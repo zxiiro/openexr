@@ -70,15 +70,7 @@ writeCopyReadONE (const char fileName1[],
 	       int xOffset,
 	       int yOffset,
 	       Compression comp)
-{    
-    //
-    // Write the pixel data in ph1 to an image file using the
-    // specified compression type and subsampling rates.
-    // Then copy the image file using OutputFile::copyPixels()
-    // Read the pixel data back from the copied file verify
-    // that the data are the same as those in ph1.
-    //
-
+{
     cout << "levelMode 0, " << "compression " << comp <<
             ", xOffset " << xOffset << ", yOffset " << yOffset << ":" << flush;
     
@@ -108,12 +100,12 @@ writeCopyReadONE (const char fileName1[],
         cout << " writing" << flush;
 
         remove (fileName1);
-            TiledOutputFile out (fileName1, hdr);
-            out.setFrameBuffer (fb);
+        TiledOutputFile out (fileName1, hdr);
+        out.setFrameBuffer (fb);
 
-            for (int tileY = 0; tileY < out.numYTiles(); ++tileY)
-                for (int tileX = 0; tileX < out.numXTiles(); ++tileX)         
-                    out.writeTile (tileX, tileY);
+        for (int tileY = 0; tileY < out.numYTiles(); ++tileY)
+            for (int tileX = 0; tileX < out.numXTiles(); ++tileX)         
+                out.writeTile (tileX, tileY);
     }
 
     {
@@ -148,9 +140,9 @@ writeCopyReadONE (const char fileName1[],
 
         in.setFrameBuffer (fb);
 
-            for (int tileY = 0; tileY < in.numYTiles(); ++tileY)
-                for (int tileX = 0; tileX < in.numXTiles(); ++tileX)         
-                    in.readTile (tileX, tileY);
+        for (int tileY = 0; tileY < in.numYTiles(); ++tileY)
+            for (int tileX = 0; tileX < in.numXTiles(); ++tileX)         
+                in.readTile (tileX, tileY);
 
         cout << " comparing" << flush;
 
@@ -185,15 +177,7 @@ writeCopyReadMIP (const char fileName1[],
 	       int xOffset,
 	       int yOffset,
 	       Compression comp)
-{    
-    //
-    // Write the pixel data in ph1 to an image file using the
-    // specified compression type and subsampling rates.
-    // Then copy the image file using OutputFile::copyPixels()
-    // Read the pixel data back from the copied file verify
-    // that the data are the same as those in ph1.
-    //
-
+{
     cout << "levelMode 1, " << "compression " << comp <<
             ", xOffset " << xOffset << ", yOffset " << yOffset << ":" << flush;
     
@@ -317,15 +301,7 @@ writeCopyReadRIP (const char fileName1[],
 	       int xOffset,
 	       int yOffset,
 	       Compression comp)
-{    
-    //
-    // Write the pixel data in ph1 to an image file using the
-    // specified compression type and subsampling rates.
-    // Then copy the image file using OutputFile::copyPixels()
-    // Read the pixel data back from the copied file verify
-    // that the data are the same as those in ph1.
-    //
-
+{
     cout << "levelMode 2, " << "compression " << comp <<
             ", xOffset " << xOffset << ", yOffset " << yOffset << ":" << flush;
     
@@ -482,25 +458,25 @@ testTiledCopyPixels ()
 {
     try
     {
-	cout << "Testing fast pixel copying for tiled/multi-res files" << endl;
+        cout << "Testing fast pixel copying for tiled/multi-res files" << endl;
 
-	const int W = 171;
-	const int H = 259;
-	const int DX = 17;
-	const int DY = 29;
-    const int XS = 55;
-    const int YS = 55;
+        const int W = 171;
+        const int H = 259;
+        const int DX = 17;
+        const int DY = 29;
+        const int XS = 55;
+        const int YS = 55;
 
-	writeCopyRead (W, H, DX, YS, 0,  0);
-	writeCopyRead (W, H, DX, YS, 0,  DY);
-	writeCopyRead (W, H, DX, YS, DX, 0);
-	writeCopyRead (W, H, DX, YS, DX, DY);
+        writeCopyRead (W, H, DX, YS, 0,  0);
+        writeCopyRead (W, H, DX, YS, 0,  DY);
+        writeCopyRead (W, H, DX, YS, DX, 0);
+        writeCopyRead (W, H, DX, YS, DX, DY);
 
-	cout << "ok\n" << endl;
+        cout << "ok\n" << endl;
     }
     catch (const std::exception &e)
     {
-	cerr << "ERROR -- caught exception: " << e.what() << endl;
-	assert (false);
+        cerr << "ERROR -- caught exception: " << e.what() << endl;
+        assert (false);
     }
 }
