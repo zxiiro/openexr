@@ -44,6 +44,8 @@
 //-----------------------------------------------------------------------------
 
 #include <ImathBox.h>
+#include <ImfHeader.h>
+#include <stdio.h>
 
 namespace Imf {
 
@@ -55,6 +57,8 @@ Imath::Box2i dataWindowForLevel (int minX, int maxX, int minY, int maxY,
 Imath::Box2i dataWindowForTile (int minX, int maxX, int minY, int maxY,
 				int tileXSize, int tileYSize,
 				int dx, int dy, int lx, int ly);
+
+size_t calculateMaxBytesPerLineForTile(const Header &header, int tileXSize);
 
 
 } // namespace Imf

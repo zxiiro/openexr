@@ -485,6 +485,33 @@ Header::compression () const
 }
 
 
+void
+Header::setTileDescription(const TileDescription& td)
+{
+    insert ("tiles", TileDescriptionAttribute (td));
+}
+
+
+bool
+Header::hasTileDescription() const
+{
+    return findTypedAttribute <TileDescriptionAttribute> ("tiles") != 0;
+}
+
+
+TileDescription &
+Header::tileDescription ()
+{
+    return typedAttribute <TileDescriptionAttribute> ("tiles").value();
+}
+
+
+const TileDescription &
+Header::tileDescription () const
+{
+    return typedAttribute <TileDescriptionAttribute> ("tiles").value();
+}
+
 void		
 Header::setPreviewImage (const PreviewImage &pi)
 {
@@ -569,38 +596,40 @@ Header::sanityCheck (bool isTiled) const
 	throw Iex::ArgExc ("Invalid screen window width in image header.");
 
     //
-    // FIXME, proper comment
-    // The line order must be one of the predefined values.
+    // If the file is tiled, verify that the tile description has resonable
+    // values and check to see if the lineOrder is one of the predefined 3.
+    // If the file is not tiled, then the lineOrder can only be INCREASING_Y
+    // or DECREASING_Y.
     //
 
     LineOrder lineOrder = this->lineOrder();
 
     if (isTiled)
     {
-        const TileDescriptionAttribute* tileDesc = findTypedAttribute
-                                        <TileDescriptionAttribute>("tiles");
-                                        
-        if(!tileDesc)
-            throw Iex::ArgExc ("Tiled file without a \"tiles\" attribute.");
-        
-        if (tileDesc->value().xSize <= 0 || tileDesc->value().ySize <= 0)
-            throw Iex::ArgExc ("Invalid tile size in image header.");
-        
-        if (tileDesc->value().mode != ONE_LEVEL &&
-            tileDesc->value().mode != MIPMAP_LEVELS &&
-            tileDesc->value().mode != RIPMAP_LEVELS)
-            throw Iex::ArgExc ("Invalid level mode in image header.");
+	const TileDescriptionAttribute* tileDesc = findTypedAttribute
+					<TileDescriptionAttribute>("tiles");
 
-        if (lineOrder != INCREASING_Y &&
-            lineOrder != DECREASING_Y &&
-            lineOrder != RANDOM_Y)
-            throw Iex::ArgExc ("Invalid line order in image header.");
+	if(!tileDesc)
+	    throw Iex::ArgExc ("Tiled file without a \"tiles\" attribute.");
+
+	if (tileDesc->value().xSize <= 0 || tileDesc->value().ySize <= 0)
+	    throw Iex::ArgExc ("Invalid tile size in image header.");
+
+	if (tileDesc->value().mode != ONE_LEVEL &&
+	    tileDesc->value().mode != MIPMAP_LEVELS &&
+	    tileDesc->value().mode != RIPMAP_LEVELS)
+	    throw Iex::ArgExc ("Invalid level mode in image header.");
+
+	if (lineOrder != INCREASING_Y &&
+	    lineOrder != DECREASING_Y &&
+	    lineOrder != RANDOM_Y)
+	    throw Iex::ArgExc ("Invalid line order in image header.");
     }
     else
     {
-        if (lineOrder != INCREASING_Y &&
-            lineOrder != DECREASING_Y)
-            throw Iex::ArgExc ("Invalid line order in image header.");
+	if (lineOrder != INCREASING_Y &&
+	    lineOrder != DECREASING_Y)
+	    throw Iex::ArgExc ("Invalid line order in image header.");
     }
 
     //
@@ -613,75 +642,105 @@ Header::sanityCheck (bool isTiled) const
     //
     // Check the channel list:
     //
-    // For each channel, the type must be one of the predefined values,
-    // and the x and y coordinates of the data window's corners must be
-    // divisible by the x and y subsampling factors.
+    // If the file is tiled then for each channel, the type must be one of the
+    // predefined values, and the x and y sampling must both be 1.
+    //
+    // If the tile is not tiled then for each channel, the type must be one of
+    // the predefined values, and the x and y coordinates of the data window's
+    // corners must be divisible by the x and y subsampling factors.
     //
     // The channel's compression method is not checked here; the check
-    // is done when the apropriate compression or decompression routines
+    // is done when the appropriate compression or decompression routines
     // are selected.
     //
 
     const ChannelList &channels = this->channels();
-
-    for (ChannelList::ConstIterator i = channels.begin();
-	 i != channels.end();
-	 ++i)
+    
+    if (isTiled)
     {
-	const Channel &channel = i.channel();
+	for (ChannelList::ConstIterator i = channels.begin();
+	     i != channels.end();
+	     ++i)
+	{
+	    const Channel &channel = i.channel();
 	
-	if (i.channel().type != UINT &&
-	    i.channel().type != HALF &&
-	    i.channel().type != FLOAT)
-	{
-	    THROW (Iex::ArgExc, "Pixel type of \"" << i.name() << "\" "
-			        "image channel is invalid.");
-	}
+	    if (i.channel().type != UINT &&
+		i.channel().type != HALF &&
+		i.channel().type != FLOAT)
+	    {
+		THROW (Iex::ArgExc, "Pixel type of \"" << i.name() << "\" "
+			            "image channel is invalid.");
+	    }
 
-	if (i.channel().xSampling < 1)
+	    if (i.channel().xSampling != 1 || i.channel().ySampling != 1)
+	    {
+		THROW (Iex::ArgExc, "All channels in a tiled file  "
+				    "\"" << i.name() << "\" must have "
+				    "sampling (1,1).");
+	    }	
+	}
+    }
+    else
+    {
+	for (ChannelList::ConstIterator i = channels.begin();
+	     i != channels.end();
+	     ++i)
 	{
-	    THROW (Iex::ArgExc, "The x subsampling factor for the "
-			        "\"" << i.name() << "\" channel "
+	    const Channel &channel = i.channel();
+	
+	    if (i.channel().type != UINT &&
+		i.channel().type != HALF &&
+		i.channel().type != FLOAT)
+	    {
+		THROW (Iex::ArgExc, "Pixel type of \"" << i.name() << "\" "
+			            "image channel is invalid.");
+	    }
+
+	    if (i.channel().xSampling < 1)
+	    {
+		THROW (Iex::ArgExc, "The x subsampling factor for the "
+				"\"" << i.name() << "\" channel "
 				"is invalid.");
-	}
+	    }
 
-	if (i.channel().ySampling < 1)
-	{
-	    THROW (Iex::ArgExc, "The y subsampling factor for the "
-			        "\"" << i.name() << "\" channel "
-				"is invalid.");
-	}
+	    if (i.channel().ySampling < 1)
+	    {
+		THROW (Iex::ArgExc, "The y subsampling factor for the "
+				    "\"" << i.name() << "\" channel "
+				    "is invalid.");
+	    }
 
-	if (dataWindow.min.x % i.channel().xSampling)
-	{
-	    THROW (Iex::ArgExc, "The minimum x coordinate of the "
-			        "image's data window is not a multiple "
-			        "of the x subsampling factor of "
-			        "the \"" << i.name() << "\" channel.");
-	}
+	    if (dataWindow.min.x % i.channel().xSampling)
+	    {
+		THROW (Iex::ArgExc, "The minimum x coordinate of the "
+				    "image's data window is not a multiple "
+				    "of the x subsampling factor of "
+				    "the \"" << i.name() << "\" channel.");
+	    }
 
-	if (dataWindow.min.y % i.channel().ySampling)
-	{
-	    THROW (Iex::ArgExc, "The minimum y coordinate of the "
-			        "image's data window is not a multiple "
-			        "of the y subsampling factor of "
-			        "the \"" << i.name() << "\" channel.");
-	}
+	    if (dataWindow.min.y % i.channel().ySampling)
+	    {
+		THROW (Iex::ArgExc, "The minimum y coordinate of the "
+				    "image's data window is not a multiple "
+				    "of the y subsampling factor of "
+				    "the \"" << i.name() << "\" channel.");
+	    }
 
-	if ((dataWindow.max.x - dataWindow.min.x + 1) % i.channel().xSampling)
-	{
-	    THROW (Iex::ArgExc, "Number of pixels per row in the "
-			        "image's data window is not a multiple "
-			        "of the x subsampling factor of "
-			        "the \"" << i.name() << "\" channel.");
-	}
+	    if ((dataWindow.max.x - dataWindow.min.x + 1) % i.channel().xSampling)
+	    {
+		THROW (Iex::ArgExc, "Number of pixels per row in the "
+				    "image's data window is not a multiple "
+				    "of the x subsampling factor of "
+				    "the \"" << i.name() << "\" channel.");
+	    }
 
-	if ((dataWindow.max.y - dataWindow.min.y + 1) % i.channel().ySampling)
-	{
-	    THROW (Iex::ArgExc, "Number of pixels per column in the "
-			        "image's data window is not a multiple "
-			        "of the y subsampling factor of "
-			        "the \"" << i.name() << "\" channel.");
+	    if ((dataWindow.max.y - dataWindow.min.y + 1) % i.channel().ySampling)
+	    {
+		THROW (Iex::ArgExc, "Number of pixels per column in the "
+				    "image's data window is not a multiple "
+				    "of the y subsampling factor of "
+				    "the \"" << i.name() << "\" channel.");
+	    }
 	}
     }
 }

@@ -236,8 +236,6 @@ public:
     void		precomputeNumYLevels ();
     void		precomputeNumXTiles ();
     void		precomputeNumYTiles ();
-    
-    void		calculateMaxBytesPerLineForTile();
 };
 
 TileCoord
@@ -459,20 +457,6 @@ TiledOutputFile::Data::precomputeNumYTiles()
 	// FIXME, change pows to shifts
 	numYTiles[i] = ((maxY - minY + 1) / (int) pow(2, i) +
 			tileDesc.ySize - 1) / tileDesc.ySize;
-    }
-}
-
-
-void
-TiledOutputFile::Data::calculateMaxBytesPerLineForTile()
-{
-    const ChannelList &channels = header.channels();
-
-    maxBytesPerTileLine = 0;
-    for (ChannelList::ConstIterator c = channels.begin();
-	 c != channels.end(); ++c)
-    {
-	maxBytesPerTileLine += pixelTypeSize(c.channel().type) * tileDesc.xSize;
     }
 }
 
@@ -982,106 +966,85 @@ TiledOutputFile::TiledOutputFile (const char fileName[], const Header &header):
 {
     try
     {
-        header.sanityCheck(true);
+	header.sanityCheck(true);
 
-        _data->header = header;
-        _data->fileName = fileName;
-        _data->lineOrder = _data->header.lineOrder();
+	_data->header = header;
+	_data->fileName = fileName;
+	_data->lineOrder = _data->header.lineOrder();
 
-        //
-        // Check that the file is indeed tiled
-        //
+	//
+	// Check that the file is indeed tiled
+	//
 
-	// FIXME, use the new header::tileDescription() function
-        _data->tileDesc = static_cast <TileDescriptionAttribute &>
-                        (_data->header["tiles"]).value();
+	_data->tileDesc = _data->header.tileDescription();
 
-	// FIXME, move sampling checks to header::sanityCheck
-        //
-        // Ensure that xSampling and ySampling are 1 for all channels
-        //
+	//
+	// Save the dataWindow information
+	//
 
-        const ChannelList &channels = _data->header.channels();
-        for (ChannelList::ConstIterator i = channels.begin();
-              i != channels.end(); ++i)
-        {
-            if (i.channel().xSampling != 1 || i.channel().ySampling != 1)
-            {
-                throw Iex::ArgExc ("All channels in a tiled file must have"
-                           "sampling (1,1).");
-            }
-        }	
+	const Box2i &dataWindow = _data->header.dataWindow();
+	_data->minX = dataWindow.min.x;
+	_data->maxX = dataWindow.max.x;
+	_data->minY = dataWindow.min.y;
+	_data->maxY = dataWindow.max.y;
 
-        //
-        // Save the dataWindow information
-        //
-
-        const Box2i &dataWindow = _data->header.dataWindow();
-        _data->minX = dataWindow.min.x;
-        _data->maxX = dataWindow.max.x;
-        _data->minY = dataWindow.min.y;
-        _data->maxY = dataWindow.max.y;
-
-        //
-        // Precompute level and tile information to speed up utility functions
-        //
+	//
+	// Precompute level and tile information to speed up utility functions
+	//
 
 	// FIXME, make this one function
-        _data->precomputeNumXLevels();
-        _data->precomputeNumYLevels();
-        _data->precomputeNumXTiles();
-        _data->precomputeNumYTiles();        
+	_data->precomputeNumXLevels();
+	_data->precomputeNumYLevels();
+	_data->precomputeNumXTiles();
+	_data->precomputeNumYTiles();        
         
-        //
-        // Determine the first tile coordinate that we will be writing
-        // if the file is not RANDOM_Y.
-        //
+	//
+	// Determine the first tile coordinate that we will be writing
+	// if the file is not RANDOM_Y.
+	//
         
-        if (_data->lineOrder == INCREASING_Y)
-        {
-            _data->nextTileToWrite = TileCoord(0,0,0,0);
-        }
-        else if (_data->lineOrder == DECREASING_Y)
-        {
-            _data->nextTileToWrite = TileCoord(0,_data->numYTiles[0]-1,0,0);
-        }
+	_data->nextTileToWrite = (_data->lineOrder == INCREASING_Y) ?
+					TileCoord(0,0,0,0) :
+					TileCoord(0,_data->numYTiles[0]-1,0,0);
 
-        _data->calculateMaxBytesPerLineForTile();
+	_data->maxBytesPerTileLine =
+		calculateMaxBytesPerLineForTile(_data->header,
+						_data->tileDesc.xSize);
 
-        _data->compressor = newTileCompressor (_data->header.compression(),
-                               _data->maxBytesPerTileLine,
-                               tileYSize(),
-                               _data->header);
+	_data->compressor = newTileCompressor (_data->header.compression(),
+			       _data->maxBytesPerTileLine,
+			       tileYSize(),
+			       _data->header);
 
-        _data->format = _data->compressor ? _data->compressor->format() :
-                            Compressor::XDR;
+	_data->format = _data->compressor ? _data->compressor->format() :
+			    Compressor::XDR;
 
-        _data->tileBufferSize = _data->maxBytesPerTileLine * tileYSize();
-        _data->tileBuffer.resizeErase (_data->tileBufferSize);
+	_data->tileBufferSize = _data->maxBytesPerTileLine * tileYSize();
+	_data->tileBuffer.resizeErase (_data->tileBufferSize);
 
 	// FIXME, not resize, but initialize
-        resizeTileOffsets(_data);
+	resizeTileOffsets(_data);
 
 #ifndef HAVE_IOS_BASE
-        _data->os.open (fileName, std::ios::binary);        
+	_data->os.open (fileName, std::ios::binary);        
 #else
-        _data->os.open (fileName, std::ios_base::binary);        
+	_data->os.open (fileName, std::ios_base::binary);        
 #endif
 
-        if (!_data->os)
-            Iex::throwErrnoExc();
+	if (!_data->os)
+	    Iex::throwErrnoExc();
 
 	// FIXME, use isTiled flag
-        _data->header.writeTo(_data->os, true);
+	_data->header.writeTo(_data->os, true);
 
-        _data->tileOffsetsPosition = writeTileOffsets(_data);
-        _data->currentPosition = _data->os.tellp();
+	_data->tileOffsetsPosition = writeTileOffsets(_data);
+	_data->currentPosition = _data->os.tellp();
     }
     catch (Iex::BaseExc &e)
     {
-        delete _data;
-        REPLACE_EXC (e, "Cannot open image file \"" << fileName << "\". " << e);
-        throw;
+	delete _data;
+	REPLACE_EXC (e, "Cannot open image file \"" << fileName << "\". " << e);
+	throw;
     }
 }
 
@@ -1559,15 +1522,9 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
     // headers are compatible.
     //
     const Header &hdr = header();
-    const Header &inHdr = in.header();
+    const Header &inHdr = in.header(); 
 
-    const TileDescriptionAttribute *tileDesc = 0, *inTileDesc = 0;
-
-    // FIXME, use Header::tileDescription()
-    tileDesc = hdr.findTypedAttribute<TileDescriptionAttribute>("tiles");
-    inTileDesc = inHdr.findTypedAttribute<TileDescriptionAttribute>("tiles");
-
-    if(!tileDesc || !inTileDesc)
+    if(!hdr.hasTileDescription() || inHdr.hasTileDescription())
     {
         THROW (Iex::ArgExc, "Cannot copy pixels from image "
                "file \"" << in.fileName() << "\" to image "
@@ -1576,10 +1533,7 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
                "OutputFile::copyPixels instead.");
     }
 
-    // FIXME, make an operator == for TileDescription, and use that instead
-    if(tileDesc->value().xSize != inTileDesc->value().xSize ||
-       tileDesc->value().ySize != inTileDesc->value().ySize ||
-       tileDesc->value().mode != inTileDesc->value().mode)
+    if(!(hdr.tileDescription() == inHdr.tileDescription()))
     {
         THROW (Iex::ArgExc, "Quick pixel copy from image "
                "file \"" << in.fileName() << "\" to image "
@@ -1684,13 +1638,9 @@ TiledOutputFile::copyPixels (InputFile &in)
     // headers are compatible.
     //
     const Header &hdr = header();
-    const Header &inHdr = in.header();
+    const Header &inHdr = in.header(); 
 
-    const TileDescriptionAttribute *tileDesc = 0, *inTileDesc = 0;
-    tileDesc = hdr.findTypedAttribute<TileDescriptionAttribute>("tiles");
-    inTileDesc = inHdr.findTypedAttribute<TileDescriptionAttribute>("tiles");
-
-    if(!tileDesc || !inTileDesc)
+    if(!hdr.hasTileDescription() || inHdr.hasTileDescription())
     {
         THROW (Iex::ArgExc, "Cannot copy pixels from image "
                "file \"" << in.fileName() << "\" to image "
@@ -1699,9 +1649,7 @@ TiledOutputFile::copyPixels (InputFile &in)
                "OutputFile::copyPixels instead.");
     }
 
-    if(tileDesc->value().xSize != inTileDesc->value().xSize ||
-       tileDesc->value().ySize != inTileDesc->value().ySize ||
-       tileDesc->value().mode != inTileDesc->value().mode)
+    if(!(hdr.tileDescription() == inHdr.tileDescription()))
     {
         THROW (Iex::ArgExc, "Quick pixel copy from image "
                "file \"" << in.fileName() << "\" to image "

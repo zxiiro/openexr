@@ -97,10 +97,7 @@ TiledRgbaOutputFile::TiledRgbaOutputFile (const char name[],
 	ch.insert ("A", Channel (HALF, 1, 1));
 
     hd.channels() = ch;
-    // FIXME, use Header::addTileDescription()
-    hd.insert ("tiles", TileDescriptionAttribute (TileDescription(tileXSize,
-                                                                  tileYSize,
-                                                                  mode)));
+    hd.setTileDescription(TileDescription(tileXSize, tileYSize, mode));
     
     _outputFile = new TiledOutputFile (name, hd);
 }
@@ -141,11 +138,7 @@ TiledRgbaOutputFile::TiledRgbaOutputFile (const char name[],
 	ch.insert ("A", Channel (HALF, 1, 1));
 
     hd.channels() = ch;
-
-    // FIXME, use addTileDescription()
-    hd.insert ("tiles", TileDescriptionAttribute (TileDescription(tileXSize,
-                                                                  tileYSize,
-                                                                  mode)));
+    hd.setTileDescription(TileDescription(tileXSize, tileYSize, mode));
     
     _outputFile = new TiledOutputFile (name, hd);
 }
@@ -185,11 +178,7 @@ TiledRgbaOutputFile::TiledRgbaOutputFile (const char name[],
 	ch.insert ("A", Channel (HALF, 1, 1));
 
     hd.channels() = ch;
-
-    // FIXME, use addTileDescription()
-    hd.insert ("tiles", TileDescriptionAttribute (TileDescription(tileXSize,
-                                                                  tileYSize,
-                                                                  mode)));
+    hd.setTileDescription(TileDescription(tileXSize, tileYSize, mode));
     _outputFile = new TiledOutputFile (name, hd);
 }
 

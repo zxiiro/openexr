@@ -51,6 +51,7 @@
 #include <Iex.h>
 #include <map>
 #include <iosfwd>
+#include <ImfTileDescription.h>
 
 namespace Imf {
 
@@ -224,11 +225,33 @@ class Header
     Compression &		compression ();
     const Compression &		compression () const;
 
-    // TODO, functions for access to tiledescription
-    // bool hasTileDescription() const;
-    // void addTileDescription(const TileDescription& td = TileDescription());
-    // TileDescription &		tileDescription ();
-    // const TileDescription &		tileDescription () const;
+
+    //----------------------------------------------------------------------
+    // Tile Description:
+    //
+    // The tile description is a TileDescriptionAttribute whose name is "tiles".
+    // The "tiles" attribute must be present in any Tiled/Multi-res file. When
+    // present, it describes various properties of the tiles that make up the
+    // file.
+    //
+    // Convenience functions:
+    //
+    // setTileDescription(td)
+    //     calls insert ("tiles", TileDescriptionAttribute (td))
+    //
+    // previewImage()
+    //     returns typedAttribute<TileDescriptionAttribute>("tiles").value()
+    //
+    // hasPreviewImage()
+    //     return findTypedAttribute<TileDescriptionAttribute>("tiles") != 0
+    //
+    //----------------------------------------------------------------------
+    void			setTileDescription(const TileDescription& td =
+							TileDescription());
+    TileDescription &		tileDescription ();
+    const TileDescription &	tileDescription () const;
+    bool			hasTileDescription() const;
+
 
     //----------------------------------------------------------------------
     // Preview image:

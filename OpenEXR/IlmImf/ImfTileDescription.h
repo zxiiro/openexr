@@ -66,6 +66,13 @@ public:
     TileDescription(unsigned int xs = 32, unsigned int ys = 32,
                     LevelMode m = ONE_LEVEL) :
         xSize(xs), ySize(ys), mode(m) { }
+
+    bool operator == (const TileDescription& a) const
+    {
+	return xSize == a.xSize &&
+	       ySize == a.ySize &&
+	       mode == a.mode;
+    }
 };
 
 

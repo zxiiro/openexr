@@ -203,8 +203,6 @@ public:
     void		precomputeNumYLevels ();
     void		precomputeNumXTiles ();
     void		precomputeNumYTiles ();
-
-    void calculateMaxBytesPerLineForTile();
 };
 
 
@@ -337,23 +335,6 @@ TiledInputFile::Data::precomputeNumYTiles()
                         tileDesc.ySize - 1) / tileDesc.ySize;
     }
 }
-
-
-// FIXME, move to common place
-void
-TiledInputFile::Data::calculateMaxBytesPerLineForTile()
-{
-    const ChannelList &channels = header.channels();
-
-    maxBytesPerTileLine = 0;
-    for (ChannelList::ConstIterator c = channels.begin();
-         c != channels.end(); ++c)
-    {
-        maxBytesPerTileLine += pixelTypeSize(c.channel().type) * tileDesc.xSize;
-    }
-}
-
-
 
 
 namespace {
@@ -978,67 +959,65 @@ TiledInputFile::TiledInputFile (const char fileName[]) :
 {
     try
     {
-        _data->fileName = fileName;
+	_data->fileName = fileName;
 #ifndef HAVE_IOS_BASE
-        _data->is->open (fileName, std::ios::binary|std::ios::in);
+	_data->is->open (fileName, std::ios::binary|std::ios::in);
 #else
-        _data->is->open (fileName, std::ios_base::binary);
+	_data->is->open (fileName, std::ios_base::binary);
 #endif
 
-        if (!(*_data->is))
-        Iex::throwErrnoExc();
+	if (!(*_data->is))
+	    Iex::throwErrnoExc();
 
-        _data->header.readFrom (*_data->is, _data->version);
-        _data->header.sanityCheck(true);
+	_data->header.readFrom (*_data->is, _data->version);
+	_data->header.sanityCheck(true);
 
-        if (!isTiled(_data->version))
-            throw Iex::ArgExc("Input file doesn't appear to be a tiled file. "
-                              "Incorrect file version flag.");
+	if (!isTiled(_data->version))
+	    throw Iex::ArgExc("Input file doesn't appear to be a tiled file. "
+			      "Incorrect file version flag.");
 
-	// FIXME, use Header::tileDescription()
-        _data->tileDesc = static_cast <TileDescriptionAttribute &>
-                            (_data->header["tiles"]).value();    
+	_data->tileDesc = _data->header.tileDescription();
+	_data->lineOrder = _data->header.lineOrder();
+	const Box2i &dataWindow = _data->header.dataWindow();
 
-        _data->lineOrder = _data->header.lineOrder();
-
-        const Box2i &dataWindow = _data->header.dataWindow();
-
-        _data->minX = dataWindow.min.x;
-        _data->maxX = dataWindow.max.x;
-        _data->minY = dataWindow.min.y;
-        _data->maxY = dataWindow.max.y;
+	_data->minX = dataWindow.min.x;
+	_data->maxX = dataWindow.max.x;
+	_data->minY = dataWindow.min.y;
+	_data->maxY = dataWindow.max.y;
 
 	// FIXME, use common precomputation functions from e.g. ImfTiledMisc.h
-        _data->precomputeNumXLevels();
-        _data->precomputeNumYLevels();
-        _data->precomputeNumXTiles();
-        _data->precomputeNumYTiles();
+	_data->precomputeNumXLevels();
+	_data->precomputeNumYLevels();
+	_data->precomputeNumXTiles();
+	_data->precomputeNumYTiles();
 
-        _data->calculateMaxBytesPerLineForTile();
+	_data->maxBytesPerTileLine =
+		calculateMaxBytesPerLineForTile(_data->header,
+						_data->tileDesc.xSize);
 
-        _data->compressor = newTileCompressor (_data->header.compression(),
-                           _data->maxBytesPerTileLine,
-                           tileYSize(),
-                           _data->header);
+	_data->compressor = newTileCompressor (_data->header.compression(),
+					       _data->maxBytesPerTileLine,
+					       tileYSize(),
+					       _data->header);
 
-        _data->format = _data->compressor?
-                _data->compressor->format(): Compressor::XDR;
+	_data->format = _data->compressor ? _data->compressor->format() :
+					    Compressor::XDR;
 
-        _data->tileBufferSize = _data->maxBytesPerTileLine * tileYSize();
-        _data->tileBuffer.resizeErase (_data->tileBufferSize);
+	_data->tileBufferSize = _data->maxBytesPerTileLine * tileYSize();
+	_data->tileBuffer.resizeErase (_data->tileBufferSize);
 
-        _data->uncompressedData = 0;
+	_data->uncompressedData = 0;
 
-        resizeTileOffsets(_data);
-        readTileOffsets(_data);
+	resizeTileOffsets(_data);
+	readTileOffsets(_data);
 
-        _data->currentPosition = _data->is->tellg();
+	_data->currentPosition = _data->is->tellg();
     }
     catch (Iex::BaseExc &e)
     {
-        delete _data;
-        REPLACE_EXC (e, "Cannot open image file \"" << fileName << "\". " << e);
-        throw;
+	delete _data;
+	REPLACE_EXC (e, "Cannot open image file \"" << fileName << "\". " << e);
+	throw;
     }
 }
 
@@ -1062,12 +1041,8 @@ TiledInputFile::TiledInputFile (const char fileName[],
 
     _data->header = header;
 
-    // FIXME, use Header::tileDescription()
-    _data->tileDesc = static_cast <TileDescriptionAttribute &>
-                        (_data->header["tiles"]).value();    
-
+    _data->tileDesc = _data->header.tileDescription();
     _data->lineOrder = _data->header.lineOrder();
-
     const Box2i &dataWindow = _data->header.dataWindow();
 
     _data->minX = dataWindow.min.x;
@@ -1081,7 +1056,9 @@ TiledInputFile::TiledInputFile (const char fileName[],
     _data->precomputeNumXTiles();
     _data->precomputeNumYTiles();
 
-    _data->calculateMaxBytesPerLineForTile();
+    _data->maxBytesPerTileLine =
+	calculateMaxBytesPerLineForTile(_data->header,
+					_data->tileDesc.xSize);
 
     _data->compressor = newTileCompressor(_data->header.compression(),
                                           _data->maxBytesPerTileLine,

@@ -42,6 +42,8 @@
 
 #include <ImfTiledMisc.h>
 #include <Iex.h>
+#include <ImfMisc.h>
+#include <ImfChannelList.h>
 
 #if defined PLATFORM_WIN32
 namespace
@@ -104,6 +106,22 @@ dataWindowForTile (int minX, int maxX,
 		  std::min(tileMax[1], levelMax[1]));
 #endif
     return Box2i(tileMin, tileMax);
+}
+
+
+size_t
+calculateMaxBytesPerLineForTile(const Header &header, int tileXSize)
+{
+    const ChannelList &channels = header.channels();
+
+    size_t maxBytesPerTileLine = 0;
+    for (ChannelList::ConstIterator c = channels.begin();
+	 c != channels.end(); ++c)
+    {
+	maxBytesPerTileLine += pixelTypeSize(c.channel().type) * tileXSize;
+    }
+
+    return maxBytesPerTileLine;
 }
 
 
