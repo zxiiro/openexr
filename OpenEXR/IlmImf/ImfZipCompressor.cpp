@@ -43,6 +43,7 @@
 #include <ImfZipCompressor.h>
 #include <Iex.h>
 #include <zlib.h>
+#include <iostream>
 
 namespace Imf {
 
@@ -133,12 +134,12 @@ ZipCompressor::compress (const char *inPtr,
 	    ++t;
 	}
     }
-
+    
     //
     // Compress the data using zlib
     //
 
-    uLongf outSize = inSize * 3 / 2;
+    uLongf outSize = int(ceil(inSize * 1.01)) + 100;
 
     if (Z_OK != ::compress ((Bytef *)_outBuffer, &outSize,
 			    (const Bytef *) _tmpBuffer, inSize))
