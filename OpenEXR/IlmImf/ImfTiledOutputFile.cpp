@@ -218,24 +218,14 @@ public:
         
         map<TileCoord, BufferedTile*>::iterator i;
         
-        for (i = tileMap.begin(); i != tileMap.end(); )
+        for (i = tileMap.begin(); i != tileMap.end(); ++i)
         {
             delete [] i->second;
 	    // FIXME, get rid of erases
-            tileMap.erase(i++);
+            //tileMap.erase(i++);
         }
     
     }
-    
-
-    //
-    // Precomputation and caching of various tile parameters
-    //
-    
-    void		precomputeNumXLevels ();
-    void		precomputeNumYLevels ();
-    void		precomputeNumXTiles ();
-    void		precomputeNumYTiles ();
 };
 
 TileCoord
@@ -323,141 +313,6 @@ TiledOutputFile::Data::nextTileCoord(const TileCoord& a)
     }
     
     return b;   
-}
-
-// FIXME, put all precomputation in one function
-//
-// precomputation and caching of various tile parameters
-//
-void
-TiledOutputFile::Data::precomputeNumXLevels()
-{
-    try
-    {
-	int num = 0;
-	switch (tileDesc.mode)
-	{
-	  case ONE_LEVEL:
-
-	    num = 1;
-	    break;
-
-	  case MIPMAP_LEVELS:
-	  
-	    {
-		int w = maxX - minX + 1;
-		int h = maxY - minY + 1;
-#ifdef PLATFORM_WIN32
-		num = (int) floor (log (max (w, h)) / log (2)) + 1;
-#else
-		num = (int) floor (log (std::max (w, h)) / log (2)) + 1;
-#endif
-	    }
-	    break;
-
-	  case RIPMAP_LEVELS:
-
-	    {
-		int w = maxX - minX + 1;
-		num = (int)floor (log (w) / log (2)) + 1;
-	    }
-	    break;
-
-	  default:
-
-	    throw Iex::ArgExc ("Unknown LevelMode format.");
-	}
-
-	numXLevels = num;
-    }
-    catch (Iex::BaseExc &e)
-    {
-	REPLACE_EXC (e, "Cannot compute numXLevels on image "
-		        "file \"" << fileName << "\". " << e);
-	throw;
-    }
-}
-
-
-void
-TiledOutputFile::Data::precomputeNumYLevels()
-{
-    try
-    {
-	int num = 0;
-	switch (tileDesc.mode)
-	{
-	  case ONE_LEVEL:
-
-	    num = 1;
-	    break;
-
-	  case MIPMAP_LEVELS:
-
-	    {
-		int w = maxX - minX + 1;
-		int h = maxY - minY + 1;
-#ifdef PLATFORM_WIN32
-		num = (int) floor (log (max (w, h)) / log (2)) + 1;
-#else
-		num = (int) floor (log (std::max (w, h)) / log (2)) + 1;
-#endif
-	    }
-	    break;
-
-	  case RIPMAP_LEVELS:
-
-	    {
-		int h = maxY - minY + 1;
-		num = (int)floor (log (h) / log (2)) + 1;
-	    }
-	    break;
-
-	  default:
-
-	    throw Iex::ArgExc ("Unknown LevelMode format.");
-	}
-
-	numYLevels = num;
-    }
-    catch (Iex::BaseExc &e)
-    {
-	REPLACE_EXC (e, "Error calling numXLevels() on image "
-		        "file \"" << fileName << "\". " << e);
-	throw;
-    }
-}
-
-
-void
-TiledOutputFile::Data::precomputeNumXTiles()
-{
-    delete numXTiles;
-    numXTiles = new int[numXLevels];
-	
-    for (int i = 0; i < numXLevels; i++)
-    {
-    	// FIXME, take the max of the level's width, with 1
-	// FIXME, change pows to shifts
-	numXTiles[i] = ((maxX - minX + 1) / (int) pow(2, i) +
-			tileDesc.xSize - 1) / tileDesc.xSize;
-    }
-}
-
-
-void
-TiledOutputFile::Data::precomputeNumYTiles()
-{
-    delete numYTiles;
-    numYTiles = new int[numYLevels];
-
-    for (int i = 0; i < numYLevels; i++)
-    {
-	// FIXME, take the max of the level's height, with 1
-	// FIXME, change pows to shifts
-	numYTiles[i] = ((maxY - minY + 1) / (int) pow(2, i) +
-			tileDesc.ySize - 1) / tileDesc.ySize;
-    }
 }
 
 
@@ -992,11 +847,11 @@ TiledOutputFile::TiledOutputFile (const char fileName[], const Header &header):
 	// Precompute level and tile information to speed up utility functions
 	//
 
-	// FIXME, make this one function
-	_data->precomputeNumXLevels();
-	_data->precomputeNumYLevels();
-	_data->precomputeNumXTiles();
-	_data->precomputeNumYTiles();        
+	precalculateTileInfo(_data->tileDesc,
+			     _data->minX, _data->maxX,
+			     _data->minY, _data->maxY,
+			     _data->numXTiles, _data->numYTiles,
+			     _data->numXLevels, _data->numYLevels);       
         
 	//
 	// Determine the first tile coordinate that we will be writing

@@ -826,8 +826,10 @@ Header::readFrom (std::istream &is, int &version)
 	THROW (Iex::InputExc, "Cannot read version " << version << " "
 			      "image files.  Current file format version "
 			      "is " << VERSION << ".");
-
-    // TODO check for unrecognized flags
+    
+    if (!supportsFlags(getFlags(version)))
+	THROW (Iex::InputExc, "Cannot read image. The file's "
+			      "version field contains unrecognized flags.");
 
     //
     // Read all attributes.

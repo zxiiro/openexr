@@ -60,6 +60,11 @@ Imath::Box2i dataWindowForTile (int minX, int maxX, int minY, int maxY,
 
 size_t calculateMaxBytesPerLineForTile(const Header &header, int tileXSize);
 
+void precalculateTileInfo(const TileDescription& tileDesc,
+			  int minX, int maxX, int minY, int maxY,
+			  int*& numXTiles, int*& numYTiles,
+			  int& numXLevels, int& numYLevels);
+
 
 } // namespace Imf
 

@@ -193,148 +193,7 @@ public:
         if (deleteStream)
             delete is;
     }
-
-    //
-    // Precomputation and caching of various tile parameters
-    //
-
-    // FIXME, these are in both the input and output tiled files, make a single place for them
-    void		precomputeNumXLevels ();
-    void		precomputeNumYLevels ();
-    void		precomputeNumXTiles ();
-    void		precomputeNumYTiles ();
 };
-
-
-//
-// precomputation and caching of various tile parameters
-//
-void
-TiledInputFile::Data::precomputeNumXLevels()
-{
-    try
-    {
-        int num = 0;
-        switch (tileDesc.mode)
-        {
-          case ONE_LEVEL:
-
-            num = 1;
-            break;
-
-          case MIPMAP_LEVELS:
-
-            {
-                int w = maxX - minX + 1;
-                int h = maxY - minY + 1;
-#ifdef PLATFORM_WIN32
-                num = (int) floor (log (max (w, h)) / log (2)) + 1;
-#else
-                num = (int) floor (log (std::max (w, h)) / log (2)) + 1;
-#endif
-            }
-            break;
-
-          case RIPMAP_LEVELS:
-
-            {
-                int w = maxX - minX + 1;
-                num = (int)floor (log (w) / log (2)) + 1;
-            }
-            break;
-
-          default:
-
-            throw Iex::ArgExc ("Unknown LevelMode format.");
-        }
-
-        numXLevels = num;
-    }
-    catch (Iex::BaseExc &e)
-    {
-        REPLACE_EXC (e, "Cannot compute numXLevels on image "
-                    "file \"" << fileName << "\". " << e);
-        throw;
-    }
-}
-
-
-void
-TiledInputFile::Data::precomputeNumYLevels()
-{
-    try
-    {
-        int num = 0;
-        switch (tileDesc.mode)
-        {
-          case ONE_LEVEL:
-
-            num = 1;
-            break;
-
-          case MIPMAP_LEVELS:
-
-            {
-                int w = maxX - minX + 1;
-                int h = maxY - minY + 1;
-#ifdef PLATFORM_WIN32
-                num = (int) floor (log (max (w, h)) / log (2)) + 1;
-#else
-                num = (int) floor (log (std::max (w, h)) / log (2)) + 1;
-#endif
-            }
-            break;
-
-          case RIPMAP_LEVELS:
-
-            {
-                int h = maxY - minY + 1;
-                num = (int)floor (log (h) / log (2)) + 1;
-            }
-            break;
-
-          default:
-
-            throw Iex::ArgExc ("Unknown LevelMode format.");
-        }
-
-        numYLevels = num;
-    }
-    catch (Iex::BaseExc &e)
-    {
-        REPLACE_EXC (e, "Error calling numXLevels() on image "
-                    "file \"" << fileName << "\". " << e);
-        throw;
-    }
-}
-
-
-void
-TiledInputFile::Data::precomputeNumXTiles()
-{
-    delete numXTiles;
-    numXTiles = new int[numXLevels];
-
-    for (int i = 0; i < numXLevels; i++)
-    {
-        numXTiles[i] = ((maxX - minX + 1) / (int) pow(2, i) +
-                        tileDesc.xSize - 1) / tileDesc.xSize;
-    }
-}
-
-
-void
-TiledInputFile::Data::precomputeNumYTiles()
-{
-    delete numYTiles;
-    numYTiles = new int[numYLevels];
-
-    for (int i = 0; i < numYLevels; i++)
-    {
-        numYTiles[i] = ((maxY - minY + 1) / (int) pow(2, i) +
-                        tileDesc.ySize - 1) / tileDesc.ySize;
-    }
-}
 
 
 namespace {
@@ -978,18 +837,26 @@ TiledInputFile::TiledInputFile (const char fileName[]) :
 
 	_data->tileDesc = _data->header.tileDescription();
 	_data->lineOrder = _data->header.lineOrder();
-	const Box2i &dataWindow = _data->header.dataWindow();
 
+	//
+	// Save the dataWindow information
+	//
+	
+	const Box2i &dataWindow = _data->header.dataWindow();
 	_data->minX = dataWindow.min.x;
 	_data->maxX = dataWindow.max.x;
 	_data->minY = dataWindow.min.y;
 	_data->maxY = dataWindow.max.y;
 
-	// FIXME, use common precomputation functions from e.g. ImfTiledMisc.h
-	_data->precomputeNumXLevels();
-	_data->precomputeNumYLevels();
-	_data->precomputeNumXTiles();
-	_data->precomputeNumYTiles();
+	//
+	// Precompute level and tile information to speed up utility functions
+	//
+
+	precalculateTileInfo(_data->tileDesc,
+			     _data->minX, _data->maxX,
+			     _data->minY, _data->maxY,
+			     _data->numXTiles, _data->numYTiles,
+			     _data->numXLevels, _data->numYLevels);    
 
 	_data->maxBytesPerTileLine =
 		calculateMaxBytesPerLineForTile(_data->header,
@@ -1043,18 +910,26 @@ TiledInputFile::TiledInputFile (const char fileName[],
 
     _data->tileDesc = _data->header.tileDescription();
     _data->lineOrder = _data->header.lineOrder();
+    
+    //
+    // Save the dataWindow information
+    //
+    
     const Box2i &dataWindow = _data->header.dataWindow();
-
     _data->minX = dataWindow.min.x;
     _data->maxX = dataWindow.max.x;
     _data->minY = dataWindow.min.y;
     _data->maxY = dataWindow.max.y;
 
-    // FIXME, use common functions
-    _data->precomputeNumXLevels();
-    _data->precomputeNumYLevels();
-    _data->precomputeNumXTiles();
-    _data->precomputeNumYTiles();
+    //
+    // Precompute level and tile information to speed up utility functions
+    //
+    
+    precalculateTileInfo(_data->tileDesc,
+		         _data->minX, _data->maxX,
+			 _data->minY, _data->maxY,
+			 _data->numXTiles, _data->numYTiles,
+			 _data->numXLevels, _data->numYLevels);    
 
     _data->maxBytesPerTileLine =
 	calculateMaxBytesPerLineForTile(_data->header,
@@ -2002,8 +1877,6 @@ TiledInputFile::numLevels () const
         REPLACE_EXC (e, "Error calling numLevels() on image "
                     "file \"" << fileName() << "\". " << e);
         throw;
-
-        return 0;
     }
 }
 
@@ -2069,8 +1942,6 @@ TiledInputFile::numXTiles (int lx) const
         REPLACE_EXC (e, "Error calling numXTiles() on image "
                     "file \"" << fileName() << "\". " << e);
         throw;
-
-        return 0;
     }
 }
 
@@ -2090,8 +1961,6 @@ TiledInputFile::numYTiles (int ly) const
         REPLACE_EXC (e, "Error calling numYTiles() on image "
                     "file \"" << fileName() << "\". " << e);
         throw;
-
-        return 0;
     }
 }
 

@@ -66,23 +66,33 @@ class PizCompressor: public Compressor
 				  int minY,
 				  const char *&outPtr);                  
                   
-    virtual int     compressTile (const char *inPtr,
-				  int inSize,
-				  Imath::Box2i range,
-				  const char *&outPtr);
+    virtual int		compressTile (const char *inPtr,
+				      int inSize,
+				      Imath::Box2i range,
+				      const char *&outPtr);
 
     virtual int		uncompress (const char *inPtr,
 				    int inSize,
 				    int minY,
 				    const char *&outPtr);
                     
-    virtual int     uncompressTile (const char *inPtr,
-				  int inSize,
-				  Imath::Box2i range,
-				  const char *&outPtr);
+    virtual int		uncompressTile (const char *inPtr,
+					int inSize,
+					Imath::Box2i range,
+					const char *&outPtr);
   private:
 
     struct ChannelData;
+    
+    int compress (const char *inPtr,
+		  int inSize,
+		  Imath::Box2i range,
+		  const char *&outPtr);
+ 
+    int uncompress (const char *inPtr,
+		    int inSize,
+		    Imath::Box2i range,
+		    const char *&outPtr);
 
     int			_maxScanLineSize;
     Format		_format;

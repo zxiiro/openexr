@@ -76,5 +76,11 @@ makeNotTiled(int version) { return version & ~TILED_FLAG; }
 inline int
 getVersion(int version) { return version & VERSION_NUMBER_FIELD; }
 
+inline int
+getFlags(int version) { return version & VERSION_FLAGS_FIELD; }
+
+inline bool
+supportsFlags(int flag) { return !(flag & ~ALL_FLAGS); }
+
 
 } // namespace Imf

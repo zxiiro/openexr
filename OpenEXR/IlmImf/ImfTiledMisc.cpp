@@ -67,8 +67,11 @@ levelSize (int min, int max, int l)
     if (l < 0)
 	throw Iex::ArgExc ("Parameter not in valid range.");
 
-    // FIXME, take the max of this with 1
-    return (max - min + 1) / (1 << l);
+#ifdef PLATFORM_WIN32
+    return max((max - min + 1) / (1 << l), 1);
+#else
+    return std::max((max - min + 1) / (1 << l), 1);
+#endif
 }
 
 
@@ -122,6 +125,132 @@ calculateMaxBytesPerLineForTile(const Header &header, int tileXSize)
     }
 
     return maxBytesPerTileLine;
+}
+
+namespace {
+
+int
+calculateNumXLevels(const TileDescription& tileDesc,
+		    int minX, int maxX, int minY, int maxY)
+{
+    int num = 0;
+    switch (tileDesc.mode)
+    {
+      case ONE_LEVEL:
+
+	num = 1;
+	break;
+
+      case MIPMAP_LEVELS:
+
+	{
+	  int w = maxX - minX + 1;
+	  int h = maxY - minY + 1;
+#ifdef PLATFORM_WIN32
+	  num = (int) floor (log (max (w, h)) / log (2)) + 1;
+#else
+	  num = (int) floor (log (std::max (w, h)) / log (2)) + 1;
+#endif
+	}
+        break;
+
+      case RIPMAP_LEVELS:
+
+	{
+	  int w = maxX - minX + 1;
+	  num = (int)floor (log (w) / log (2)) + 1;
+	}
+	break;
+
+      default:
+
+	throw Iex::ArgExc ("Unknown LevelMode format.");
+    }
+
+    return num;
+}
+
+
+int
+calculateNumYLevels(const TileDescription& tileDesc,
+		    int minX, int maxX, int minY, int maxY)
+{
+    int num = 0;
+    switch (tileDesc.mode)
+    {
+      case ONE_LEVEL:
+
+	num = 1;
+	break;
+
+      case MIPMAP_LEVELS:
+
+	{
+	  int w = maxX - minX + 1;
+	  int h = maxY - minY + 1;
+#ifdef PLATFORM_WIN32
+	  num = (int) floor (log (max (w, h)) / log (2)) + 1;
+#else
+	  num = (int) floor (log (std::max (w, h)) / log (2)) + 1;
+#endif
+	}
+        break;
+
+      case RIPMAP_LEVELS:
+
+	{
+	  int h = maxY - minY + 1;
+	  num = (int)floor (log (h) / log (2)) + 1;
+	}
+	break;
+
+      default:
+
+	throw Iex::ArgExc ("Unknown LevelMode format.");
+    }
+
+    return num;
+}
+
+
+void
+calculateNumXTiles(int* numXTiles, int numXLevels,
+		   int minX, int maxX, int xSize)
+{
+    for (int i = 0; i < numXLevels; i++)
+    {
+	numXTiles[i] = (levelSize(minX, maxX, i) + xSize - 1) / xSize;
+    }
+}
+
+
+void
+calculateNumYTiles(int* numYTiles, int numYLevels,
+		   int minY, int maxY, int ySize)
+{
+    for (int i = 0; i < numYLevels; i++)
+    {
+	numYTiles[i] = (levelSize(minY, maxY, i) + ySize - 1) / ySize;
+    }
+}
+
+
+} // namespace
+
+
+void
+precalculateTileInfo(const TileDescription& tileDesc,
+		     int minX, int maxX, int minY, int maxY,
+		     int*& numXTiles, int*& numYTiles,
+		     int& numXLevels, int& numYLevels)
+{
+    numXLevels = calculateNumXLevels(tileDesc, minX, maxX, minY, maxY);
+    numYLevels = calculateNumYLevels(tileDesc, minX, maxX, minY, maxY);
+    
+    numXTiles = new int[numXLevels];
+    numYTiles = new int[numYLevels];
+    calculateNumXTiles(numXTiles, numXLevels, minX, maxX, tileDesc.xSize);
+    calculateNumYTiles(numYTiles, numYLevels, minY, maxY, tileDesc.ySize);
 }
 
 
