@@ -46,6 +46,7 @@
 #include <ImfXdr.h>
 #include <ImathFun.h>
 #include <Iex.h>
+#include <ImfVersion.h>
 
 namespace Imf {
 

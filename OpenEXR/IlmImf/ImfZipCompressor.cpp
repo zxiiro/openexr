@@ -59,7 +59,7 @@ ZipCompressor::ZipCompressor
     _outBuffer (0)
 {
     _tmpBuffer = new char [maxScanLineSize * numScanLines];
-    _outBuffer = new char [maxScanLineSize * numScanLines * 3 / 2];
+    _outBuffer = new char [int (ceil (maxScanLineSize * numScanLines * 1.01)) + 100];
 }
 
 
@@ -84,7 +84,7 @@ ZipCompressor::compress (const char *inPtr,
 			 const char *&outPtr)
 {
     //
-    // Special case ­- empty input buffer
+    // Special case - empty input buffer
     //
 
     if (inSize == 0)
@@ -158,7 +158,7 @@ ZipCompressor::uncompress (const char *inPtr,
 			   const char *&outPtr)
 {
     //
-    // Special case ­- empty input buffer
+    // Special case - empty input buffer
     //
 
     if (inSize == 0)

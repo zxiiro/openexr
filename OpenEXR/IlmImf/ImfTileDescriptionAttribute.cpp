@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2002, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2003, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
 // 
 // All rights reserved.
@@ -34,47 +34,48 @@
 
 
 
+//-----------------------------------------------------------------------------
+//
+//	class TileDescriptionAttribute
+//
+//-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-//
-//	MAGIC		magic number that identifies image files
-//	VERSION		the current image file format version
-//
-//-----------------------------------------------------------------------------
+#include <ImfTileDescriptionAttribute.h>
 
 
 namespace Imf {
 
 
-const int MAGIC = 20000630;
-const int VERSION = 2;
-
-const int VERSION_NUMBER_FIELD = 0x000000ff;
-const int VERSION_FLAGS_FIELD  = 0xffffff00;
-
-// value that goes into VERSION_NUMBER_FIELD.
-const int CURRENT_VERSION      = 0x00000002;
-
-// flags that go into VERSION_FLAGS_FIELD.
-// Can only occupy the 1 bits in VERSION_FLAGS_FIELD.
-const int TILED_FLAG           = 0x00000100;
-
-// Bitwise OR of all known flags.
-const int ALL_FLAGS            = TILED_FLAG;
+template <>
+const char *
+TileDescriptionAttribute::staticTypeName ()
+{
+    return "tiledesc";
+}
 
 
+template <>
+void
+TileDescriptionAttribute::writeValueTo (std::ostream &os, int version) const
+{
+    Xdr::write <StreamIO> (os, _value.xSize);
+    Xdr::write <StreamIO> (os, _value.ySize);
+    unsigned char tmp = _value.mode;
+    Xdr::write <StreamIO> (os, tmp);
+}
 
-inline bool
-isTiled (int version) { return version & TILED_FLAG; }
 
-inline int
-makeTiled(int version) { return version | TILED_FLAG; }
-
-inline int
-makeNotTiled(int version) { return version & ~TILED_FLAG; }
-
-inline int
-getVersion(int version) { return version & VERSION_NUMBER_FIELD; }
+template <>
+void
+TileDescriptionAttribute::readValueFrom (std::istream &is, int size, int version)
+{
+    Xdr::read <StreamIO> (is, _value.xSize);
+    Xdr::read <StreamIO> (is, _value.ySize);
+    unsigned char tmp;
+    Xdr::read <StreamIO> (is, tmp);
+    _value.mode = LevelMode (tmp);
+    
+}
 
 
 } // namespace Imf

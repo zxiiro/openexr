@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2002, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2003, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
 // 
 // All rights reserved.
@@ -34,47 +34,53 @@
 
 
 
+#ifndef INCLUDED_IMF_RGBA_H
+#define INCLUDED_IMF_RGBA_H
+
 
 //-----------------------------------------------------------------------------
 //
-//	MAGIC		magic number that identifies image files
-//	VERSION		the current image file format version
+//	class Rgba
 //
 //-----------------------------------------------------------------------------
 
+//#include <ImfHeader.h>
+//#include <ImfFrameBuffer.h>
+//#include <ImathVec.h>
+//#include <ImathBox.h>
+#include <half.h>
 
 namespace Imf {
 
 
-const int MAGIC = 20000630;
-const int VERSION = 2;
+//
+// RGBA pixel
+//
 
-const int VERSION_NUMBER_FIELD = 0x000000ff;
-const int VERSION_FLAGS_FIELD  = 0xffffff00;
-
-// value that goes into VERSION_NUMBER_FIELD.
-const int CURRENT_VERSION      = 0x00000002;
-
-// flags that go into VERSION_FLAGS_FIELD.
-// Can only occupy the 1 bits in VERSION_FLAGS_FIELD.
-const int TILED_FLAG           = 0x00000100;
-
-// Bitwise OR of all known flags.
-const int ALL_FLAGS            = TILED_FLAG;
+struct Rgba
+{
+    half	r;
+    half	g;
+    half	b;
+    half	a;
+};
 
 
+//
+// Channels in an RGBA file
+//
 
-inline bool
-isTiled (int version) { return version & TILED_FLAG; }
-
-inline int
-makeTiled(int version) { return version | TILED_FLAG; }
-
-inline int
-makeNotTiled(int version) { return version & ~TILED_FLAG; }
-
-inline int
-getVersion(int version) { return version & VERSION_NUMBER_FIELD; }
+enum RgbaChannels
+{
+    WRITE_R    = 0x1,
+    WRITE_G    = 0x2,
+    WRITE_B    = 0x4,
+    WRITE_A    = 0x8,
+    WRITE_RGB  = 0x7,
+    WRITE_RGBA = 0xf
+};
 
 
 } // namespace Imf
+
+#endif

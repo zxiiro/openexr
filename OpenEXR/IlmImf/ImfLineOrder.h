@@ -50,6 +50,7 @@ enum LineOrder
 {
     INCREASING_Y = 0,	// first scan line has lowest y coordinate
     DECREASING_Y = 1,	// first scan line has highest y coordinate
+    RANDOM_Y = 2,       // only for Tiled files. tiles are written randomly.
 
     NUM_LINEORDERS	// number of different line orders
 };

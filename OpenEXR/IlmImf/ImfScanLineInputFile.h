@@ -34,27 +34,23 @@
 
 
 
-#ifndef INCLUDED_IMF_INPUT_FILE_H
-#define INCLUDED_IMF_INPUT_FILE_H
+#ifndef INCLUDED_IMF_SCAN_LINE_INPUT_FILE_H
+#define INCLUDED_IMF_SCAN_LINE_INPUT_FILE_H
 
 //-----------------------------------------------------------------------------
 //
-//	class InputFile
+//	class ScanLineInputFile
 //
 //-----------------------------------------------------------------------------
 
 #include <ImfHeader.h>
 #include <ImfFrameBuffer.h>
-#include <string>
 #include <fstream>
 
 namespace Imf {
 
-class TiledInputFile;
-class ScanLineInputFile;
 
-
-class InputFile
+class ScanLineInputFile
 {
   public:
 
@@ -62,14 +58,16 @@ class InputFile
     // Constructor -- opens the file and reads the file header.
     //---------------------------------------------------------
 
-    InputFile (const char fileName[]);
+    ScanLineInputFile (const char fileName[],
+			const Header &header,
+			std::ifstream &is);
 
 
     //-------------------------------
     // Destructor -- closes the file.
     //-------------------------------
 
-    virtual ~InputFile ();
+    virtual ~ScanLineInputFile ();
 
 
     //------------------------
@@ -146,29 +144,12 @@ class InputFile
     void		rawPixelData (int firstScanLine,
 				      const char *&pixelData,
 				      int &pixelDataSize);
-                                     
-    //----------------------------------------------
-    // Read a tile of raw pixel data from the file,
-    // without uncompressing it (this function is
-    // used to implement TiledOutputFile::copyPixels()).
-    //----------------------------------------------
 
-    void		rawTileData (int & dx, int & dy, int & lx, int & ly,
-				     const char *&pixelData,
-				     int &pixelDataSize);
+    class Data;
 
   private:
 
-    InputFile (const InputFile &);			// not implemented
-    InputFile & operator = (const InputFile &);		// not implemented
-
-    std::string		_fileName;
-    Header		_header;
-    int			_version;
-    std::ifstream	_is;
-
-    TiledInputFile *	_tFile;
-    ScanLineInputFile *	_sFile;
+    Data *		_data;
 };
 
 

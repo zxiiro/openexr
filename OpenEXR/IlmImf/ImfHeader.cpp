@@ -57,6 +57,8 @@
 #include <ImfPreviewImageAttribute.h>
 #include <ImfStringAttribute.h>
 #include <ImfVecAttribute.h>
+#include <ImfTileDescriptionAttribute.h>
+#include <ImfMisc.h>
 
 #include <sstream>
 
@@ -100,6 +102,7 @@ staticInitialize ()
 	V3iAttribute::registerAttributeType();
 	V3fAttribute::registerAttributeType();
 	PreviewImageAttribute::registerAttributeType();
+	TileDescriptionAttribute::registerAttributeType();
 
 	initialized = true;
     }
@@ -511,7 +514,7 @@ Header::hasPreviewImage () const
 
 
 void		
-Header::sanityCheck () const
+Header::sanityCheck (bool isTiled) const
 {
     //
     // The display window and the data window
@@ -566,15 +569,38 @@ Header::sanityCheck () const
 	throw Iex::ArgExc ("Invalid screen window width in image header.");
 
     //
+    // FIXME, proper comment
     // The line order must be one of the predefined values.
     //
 
     LineOrder lineOrder = this->lineOrder();
 
-    if (lineOrder != INCREASING_Y &&
-	lineOrder != DECREASING_Y)
+    if (isTiled)
     {
-	throw Iex::ArgExc ("Invalid line order in image header.");
+        const TileDescriptionAttribute* tileDesc = findTypedAttribute
+                                        <TileDescriptionAttribute>("tiles");
+                                        
+        if(!tileDesc)
+            throw Iex::ArgExc ("Tiled file without a \"tiles\" attribute.");
+        
+        if (tileDesc->value().xSize <= 0 || tileDesc->value().ySize <= 0)
+            throw Iex::ArgExc ("Invalid tile size in image header.");
+        
+        if (tileDesc->value().mode != ONE_LEVEL &&
+            tileDesc->value().mode != MIPMAP_LEVELS &&
+            tileDesc->value().mode != RIPMAP_LEVELS)
+            throw Iex::ArgExc ("Invalid level mode in image header.");
+
+        if (lineOrder != INCREASING_Y &&
+            lineOrder != DECREASING_Y &&
+            lineOrder != RANDOM_Y)
+            throw Iex::ArgExc ("Invalid line order in image header.");
+    }
+    else
+    {
+        if (lineOrder != INCREASING_Y &&
+            lineOrder != DECREASING_Y)
+            throw Iex::ArgExc ("Invalid line order in image header.");
     }
 
     //
@@ -582,7 +608,7 @@ Header::sanityCheck () const
     //
 
     if (!isValidCompression (this->compression()))
-	throw Iex::ArgExc ("Unknown compression type in image header.");
+        throw Iex::ArgExc ("Unknown compression type in image header.");
 
     //
     // Check the channel list:
@@ -662,15 +688,17 @@ Header::sanityCheck () const
 
 
 long
-Header::writeTo (std::ostream &os) const
+Header::writeTo (std::ostream &os, bool isTiled) const
 {
     //
     // Write a "magic number" to identify the file as an image file.
     // Write the current file format version number.
     //
 
-    Xdr::write <StreamIO> (os, MAGIC);
-    Xdr::write <StreamIO> (os, VERSION);
+    int version = (isTiled) ? makeTiled(VERSION) : VERSION;
+    
+    Xdr::write <StreamIO> (os, MAGIC);    
+    Xdr::write <StreamIO> (os, version);
 
     //
     // Write all attributes.  If we have a preview image attribute,
@@ -681,6 +709,7 @@ Header::writeTo (std::ostream &os) const
 
     const Attribute *preview =
 	    findTypedAttribute <PreviewImageAttribute> ("preview");
+
 
     for (ConstIterator i = begin(); i != end(); ++i)
     {
@@ -697,7 +726,7 @@ Header::writeTo (std::ostream &os) const
 	//
 
 	std::ostringstream ss;
-	i.attribute().writeValueTo (ss, VERSION);
+	i.attribute().writeValueTo (ss, version);
 
 	std::string s = ss.str();
 	Xdr::write <StreamIO> (os, (int) s.length());
@@ -734,10 +763,12 @@ Header::readFrom (std::istream &is, int &version)
     if (magic != MAGIC)
 	throw Iex::InputExc ("File is not an image file.");
 
-    if (version != 1 && version != VERSION)
+    if (getVersion(version) != VERSION)
 	THROW (Iex::InputExc, "Cannot read version " << version << " "
 			      "image files.  Current file format version "
 			      "is " << VERSION << ".");
+
+    // TODO check for unrecognized flags
 
     //
     // Read all attributes.

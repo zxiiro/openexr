@@ -18,8 +18,8 @@ libIlmImf_la_SOURCES = ImfAttribute.cpp ImfBoxAttribute.cpp ImfCRgbaFile.cpp \
 		       ImfCRgbaFile.h ImfChannelList.h \
 		       ImfChannelListAttribute.h \
 		       ImfCompressionAttribute.h \
-	               ImfDoubleAttribute.h ImfFloatAttribute.h \
-	               ImfFrameBuffer.h ImfHeader.h ImfIO.h \
+		       ImfDoubleAttribute.h ImfFloatAttribute.h \
+		       ImfFrameBuffer.h ImfHeader.h ImfIO.h \
 		       ImfInputFile.h ImfIntAttribute.h \
 		       ImfLineOrderAttribute.h ImfMatrixAttribute.h \
 		       ImfOpaqueAttribute.h ImfOutputFile.h \
@@ -31,7 +31,13 @@ libIlmImf_la_SOURCES = ImfAttribute.cpp ImfBoxAttribute.cpp ImfCRgbaFile.cpp \
 		       ImfPizCompressor.h ImfMisc.h ImfAutoArray.h \
 		       ImfConvert.cpp ImfConvert.h ImfPreviewImage.cpp \
 		       ImfPreviewImage.h ImfPreviewImageAttribute.cpp \
-		       ImfPreviewImageAttribute.h
+		       ImfPreviewImageAttribute.h ImfRgba.h \
+		       ImfScanLineInputFile.cpp ImfScanLineInputFile.h \
+		       ImfTileDescription.h ImfTileDescriptionAttribute.cpp \
+		       ImfTileDescriptionAttribute.h ImfTiledInputFile.cpp \
+		       ImfTiledInputFile.h ImfTiledOutputFile.cpp \
+		       ImfTiledOutputFile.h ImfTiledRgbaFile.cpp \
+		       ImfTiledRgbaFile.h 
 
 
 libIlmImfincludedir = $(includedir)/OpenEXR
@@ -40,8 +46,8 @@ libIlmImfinclude_HEADERS = ImfAttribute.h ImfBoxAttribute.h \
 			   ImfCRgbaFile.h ImfChannelList.h \
 			   ImfChannelListAttribute.h \
 			   ImfCompressionAttribute.h \
-	                   ImfDoubleAttribute.h ImfFloatAttribute.h \
-	                   ImfFrameBuffer.h ImfHeader.h ImfIO.h \
+			   ImfDoubleAttribute.h ImfFloatAttribute.h \
+			   ImfFrameBuffer.h ImfHeader.h ImfIO.h \
 			   ImfInputFile.h ImfIntAttribute.h \
 			   ImfLineOrderAttribute.h ImfMatrixAttribute.h \
 			   ImfOpaqueAttribute.h ImfOutputFile.h \
@@ -50,10 +56,14 @@ libIlmImfinclude_HEADERS = ImfAttribute.h ImfBoxAttribute.h \
 			   ImfArray.h ImfCompression.h ImfLineOrder.h \
 			   ImfName.h ImfPixelType.h ImfVersion.h ImfXdr.h \
 			   ImfConvert.h ImfPreviewImage.h \
-			   ImfPreviewImageAttribute.h
+			   ImfPreviewImageAttribute.h ImfRgba.h \
+			   ImfScanLineInputFile.h ImfTileDescription.h \
+			   ImfTileDescriptionAttribute.h ImfTiledInputFile.h \
+			   ImfTiledOutputFile.h ImfTiledRgbaFile.h
 
 noinst_HEADERS = ImfCompressor.h ImfRleCompressor.h ImfZipCompressor.h \
-		 ImfPizCompressor.h ImfMisc.h ImfAutoArray.h
+		 ImfPizCompressor.h ImfMisc.h ImfAutoArray.h \
+		 ImfScanLineInputFile.h
 
 EXTRA_DIST = $(noinst_HEADERS)
 

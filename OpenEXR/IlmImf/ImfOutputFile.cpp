@@ -59,6 +59,18 @@
 #include <assert.h>
 
 
+#if defined PLATFORM_WIN32
+namespace
+{
+template<class T>
+inline T min (const T &a, const T &b) { return (a <= b) ? a : b; }
+
+template<class T>
+inline T max (const T &a, const T &b) { return (a >= b) ? a : b; }
+}
+#endif
+
+
 namespace Imf {
 
 using Imath::Box2i;
@@ -126,7 +138,7 @@ struct OutputFile::Data
     int			 minX;
     int			 maxX;
     int			 minY;
-    int                  maxY;
+    int			 maxY;
     vector<long>	 lineOffsets;
     int			 linesInBuffer;
     size_t		 lineBufferSize;
@@ -218,107 +230,117 @@ convertToXdr (OutputFile::Data *ofd, int inSize)
     // makes it possible to convert the pixel data in place, without an
     // intermediate temporary buffer.
     //
-   
-    unsigned int startY, endY;		// The first and last scanlines in
-    					// the file that are in the lineBuffer.
+
+    int startY, endY;          // The first and last scanlines in
+                                        // the file that are in the lineBuffer.
     int dy;
     
     if (ofd->lineOrder == INCREASING_Y)
     {
-	startY = std::max (ofd->lineBufferMinY, ofd->minY);
-	endY = std::min (ofd->lineBufferMaxY, ofd->maxY) + 1;
-        dy = 1;
+#ifdef PLATFORM_WIN32
+	startY = max(ofd->lineBufferMinY, ofd->minY);
+	endY = min(ofd->lineBufferMaxY, ofd->maxY) + 1;
+#else
+	startY = std::max(ofd->lineBufferMinY, ofd->minY);
+	endY = std::min(ofd->lineBufferMaxY, ofd->maxY) + 1;
+#endif
+	dy = 1;
     }
     else
     {
-	startY = std::min (ofd->lineBufferMaxY, ofd->maxY);
-	endY = std::max (ofd->lineBufferMinY, ofd->minY) - 1;
-        dy = -1;
+#ifdef PLATFORM_WIN32
+	startY = min(ofd->lineBufferMaxY, ofd->maxY);
+	endY = max(ofd->lineBufferMinY, ofd->minY) - 1;
+#else
+	startY = std::min(ofd->lineBufferMaxY, ofd->maxY);
+	endY = std::max(ofd->lineBufferMinY, ofd->minY) - 1;
+#endif
+	dy = -1;
     }
 
     //
     // Iterate over all scanlines in the lineBuffer to convert.
     //
 
-    for (unsigned int y = startY; y != endY; y += dy)
+    for (int y = startY; y != endY; y += dy)
     {
 	//
-        // Set these to point to the start of line y.
-        // We will write to writePtr from pixelPtr.
+	// Set these to point to the start of line y.
+	// We will write to writePtr from pixelPtr.
 	//
 	
-        char *writePtr = ofd->lineBuffer +
-		         ofd->offsetInLineBuffer[y - ofd->minY];
+	char *writePtr = ofd->lineBuffer +
+			 ofd->offsetInLineBuffer[y - ofd->minY];
 
-        char *pixelPtr = writePtr;
+	char *pixelPtr = writePtr;
         
 	//
-        // Iterate over all slices in the file.
+	// Iterate over all slices in the file.
 	//
 	
-        for (unsigned int i = 0; i < ofd->slices.size(); ++i)
-        {
-            //
-            // Test if scan line y of this channel is
-            // contains any data (the scan line contains
-            // data only if y % ySampling == 0).
-            //
+	for (unsigned int i = 0; i < ofd->slices.size(); ++i)
+	{
+	    //
+	    // Test if scan line y of this channel is
+	    // contains any data (the scan line contains
+	    // data only if y % ySampling == 0).
+	    //
 
-            const OutSliceInfo &slice = ofd->slices[i];
+	    const OutSliceInfo &slice = ofd->slices[i];
 
-            if (modp (y, slice.ySampling) != 0)
-                continue;
+	    if (modp (y, slice.ySampling) != 0)
+		continue;
 
-            //
-            // Find the number of sampled pixels, dMaxX-dMinX+1, for
+	    //
+	    // Find the number of sampled pixels, dMaxX-dMinX+1, for
 	    // slice i in scan line y (i.e. pixels within the data window
-            // for which x % xSampling == 0).
-            //
+	    // for which x % xSampling == 0).
+	    //
 
-            int dMinX = divp (ofd->minX, slice.xSampling);
-            int dMaxX = divp (ofd->maxX, slice.xSampling);
+	    int dMinX = divp (ofd->minX, slice.xSampling);
+	    int dMaxX = divp (ofd->maxX, slice.xSampling);
             
 	    //
-            // Convert the samples in place.
+	    // Convert the samples in place.
 	    //
 
-            switch (slice.type)
-            {
-              case UINT:
+	    switch (slice.type)
+	    {
+	      case UINT:
 
-                while (dMinX <= dMaxX)
-                {
-                    Xdr::write <CharPtrIO>
-                        (writePtr, *(const unsigned int *) pixelPtr);
-                    pixelPtr += sizeof(unsigned int);
+		while (dMinX <= dMaxX)
+		{
+		    Xdr::write <CharPtrIO>
+			(writePtr, *(const unsigned int *) pixelPtr);
+		    pixelPtr += sizeof(unsigned int);
 
-                    dMinX += 1;
-                }
-                break;
+		    dMinX += 1;
+		}
+		break;
 
-              case HALF:
+	      case HALF:
 
-                while (dMinX <= dMaxX)
-                {                
-                    Xdr::write <CharPtrIO>
-                        (writePtr, *(const half *) pixelPtr);
-                    pixelPtr += sizeof(half);
+		while (dMinX <= dMaxX)
+		{                
+		    Xdr::write <CharPtrIO>
+			(writePtr, *(const half *) pixelPtr);
+		    pixelPtr += sizeof(half);
 
-                    dMinX += 1;
-                }
-                break;
+		    dMinX += 1;
+		}
+		break;
 
-              case FLOAT:
+	      case FLOAT:
 
-                while (dMinX <= dMaxX)
-                {
-                    Xdr::write <CharPtrIO>
-                        (writePtr, *(const float *) pixelPtr);
-                    pixelPtr += sizeof(float);
+		while (dMinX <= dMaxX)
+		{
+		    Xdr::write <CharPtrIO>
+			(writePtr, *(const float *) pixelPtr);
+		    pixelPtr += sizeof(float);
 
-                    dMinX += 1;
-                }
-                break;
+		    dMinX += 1;
+		}
+		break;
 
               default:
 
@@ -326,11 +348,11 @@ convertToXdr (OutputFile::Data *ofd, int inSize)
             }           
         }
 
-	#ifdef DEBUG
+#ifdef DEBUG
 
-	    assert (writePtr == pixelPtr);
+	assert (writePtr == pixelPtr);
 
-	#endif
+#endif
     }
 }
 
@@ -879,9 +901,8 @@ OutputFile::writePixels (int numScanLines)
 		    {
                         //
                         // The data did not shrink during compression, but
-                        // we cannot write to the file using the machine's
-			// native format, so we need to convert the lineBuffer
-			// to Xdr.
+                        // we cannot write to the file using NATIVE format,
+                        // so we need to convert the lineBuffer to XDR
                         //
 
                         convertToXdr(_data, dataSize);
@@ -940,6 +961,15 @@ OutputFile::copyPixels (InputFile &in)
 
     const Header &hdr = header();
     const Header &inHdr = in.header();
+
+    if (inHdr.find("tiles") != inHdr.end())
+    {
+	THROW (Iex::ArgExc, "Cannot copy pixels from image "
+			    "file \"" << in.fileName() << "\" to image "
+			    "file \"" << fileName() << "\". The input file is "
+			    "tiled, but the output file is not. Try using "
+			    "TiledOutputFile::copyPixels instead.");
+    }
 
     if (!(hdr.dataWindow() == inHdr.dataWindow()))
     {

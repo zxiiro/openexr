@@ -42,7 +42,6 @@
 //
 //	Simplified RGBA image I/O
 //
-//	class Rgba
 //	class RgbaOutputFile
 //	class RgbaInputFile
 //
@@ -53,6 +52,7 @@
 #include <ImathVec.h>
 #include <ImathBox.h>
 #include <half.h>
+#include <ImfRgba.h>
 
 namespace Imf {
 
@@ -60,35 +60,6 @@ namespace Imf {
 class OutputFile;
 class InputFile;
 class PreviewRgba;
-
-
-//
-// RGBA pixel
-//
-
-struct Rgba
-{
-    half	r;
-    half	g;
-    half	b;
-    half	a;
-};
-
-
-//
-// Channels in an RGBA file
-//
-
-enum RgbaChannels
-{
-    WRITE_R    = 0x1,
-    WRITE_G    = 0x2,
-    WRITE_B    = 0x4,
-    WRITE_A    = 0x8,
-    WRITE_RGB  = 0x7,
-    WRITE_RGBA = 0xf
-};
-
 
 //
 // RGBA output file.

@@ -37,7 +37,6 @@
 
 //-----------------------------------------------------------------------------
 //
-//	class Rgba
 //	class RgbaOutputFile
 //	class RgbaInputFile
 //

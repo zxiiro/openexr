@@ -224,6 +224,11 @@ class Header
     Compression &		compression ();
     const Compression &		compression () const;
 
+    // TODO, functions for access to tiledescription
+    // bool hasTileDescription() const;
+    // void addTileDescription(const TileDescription& td = TileDescription());
+    // TileDescription &		tileDescription ();
+    // const TileDescription &		tileDescription () const;
 
     //----------------------------------------------------------------------
     // Preview image:
@@ -258,9 +263,12 @@ class Header
     // Sanity check -- examines the header, and throws an exception
     // if it finds something wrong (empty display window, negative
     // pixel aspect ratio, unknown compression sceme etc.)
+    //
+    // set isTiled to true if you are checking a tiled/multi-res
+    // header
     //-------------------------------------------------------------
 
-    void			sanityCheck () const;
+    void			sanityCheck (bool isTiled = false) const;
 
 
     //------------------------------------------------------------------
@@ -274,7 +282,8 @@ class Header
     //------------------------------------------------------------------
 
 
-    long			writeTo (std::ostream &os) const;
+    long			writeTo (std::ostream &os,
+                                         bool isTiled = false) const;
     void			readFrom (std::istream &is, int &version);
 
   private:
