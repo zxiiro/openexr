@@ -310,16 +310,6 @@ class TiledInputFile
     bool isValidTile(int dx, int dy, int lx, int ly) const;
     size_t bytesPerLineForTile(int dx, int dy, int lx, int ly) const;
 
-    //
-    // Reads all level (0,0) tiles that overlap the scanline interval provided,
-    // and store them in the user's frame buffer.
-    //
-    // This function facilitates the use of the old scanline-based API on
-    // tiled files.
-    //
-
-    void		readPixels(int scanLine1, int scanLine2);
-
     Data *		_data;
 };
 

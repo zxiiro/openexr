@@ -45,6 +45,7 @@
 
 #include <ImfHeader.h>
 #include <ImfFrameBuffer.h>
+#include <ImfTiledOutputFile.h>
 #include <string>
 #include <fstream>
 
@@ -163,6 +164,9 @@ class InputFile
 
     InputFile (const InputFile &);			// not implemented
     InputFile & operator = (const InputFile &);		// not implemented
+    
+    friend int TiledOutputFile::copyPixels(InputFile &);
+    TiledInputFile* tFile();
     
     Data*		_data;
 };

@@ -559,5 +559,11 @@ InputFile::rawTileData (int &dx, int &dy, int &lx, int &ly,
     }
 }
 
+TiledInputFile*
+InputFile::tFile()
+{
+    return _data->tFile;
+}
+
 
 } // namespace Imf

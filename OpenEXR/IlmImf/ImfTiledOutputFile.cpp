@@ -258,10 +258,9 @@ TiledOutputFile::Data::nextTileCoord(const TileCoord& a)
                     {
                         b.lx = 0;
                         b.ly++;
-
-			// FIXME, add assert
-                        //if (b.ly > numYLevels)
-                            // should not happen
+#ifdef DEBUG
+                        assert (b.ly <= numYLevels);
+#endif
                     }
                     break;
                 }
@@ -296,10 +295,9 @@ TiledOutputFile::Data::nextTileCoord(const TileCoord& a)
                     {
                         b.lx = 0;
                         b.ly++;
-
-			// FIXME, add assert
-                        //if (b.ly > numYLevels)
-                            // should not happen
+#ifdef DEBUG
+                        assert (b.ly <= numYLevels);
+#endif
                     }
                     break;
                 }
@@ -1173,7 +1171,7 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
         {
             for (size_t i_lx = 0; i_lx < numXLevels(); ++i_lx)
             {
-            numAllTiles += numXTiles(i_lx) * numYTiles(i_ly);
+                numAllTiles += numXTiles(i_lx) * numYTiles(i_ly);
             }
         }
         break;
@@ -1194,119 +1192,10 @@ TiledOutputFile::copyPixels (TiledInputFile &in)
 }
 
 
-// FIXME, call the function above
 void	
 TiledOutputFile::copyPixels (InputFile &in)
 {
-    //
-    // Check if this file's and and the InputFile's
-    // headers are compatible.
-    //
-    const Header &hdr = header();
-    const Header &inHdr = in.header(); 
-
-    if(!hdr.hasTileDescription() || inHdr.hasTileDescription())
-    {
-        THROW (Iex::ArgExc, "Cannot copy pixels from image "
-               "file \"" << in.fileName() << "\" to image "
-               "file \"" << fileName() << "\". The output file "
-               "tiled, but the input file is not. Try using "
-               "OutputFile::copyPixels instead.");
-    }
-
-    if(!(hdr.tileDescription() == inHdr.tileDescription()))
-    {
-        THROW (Iex::ArgExc, "Quick pixel copy from image "
-               "file \"" << in.fileName() << "\" to image "
-               "file \"" << fileName() << "\" failed. "
-               "The files have different tile descriptions.");
-    }
-
-    if (!(hdr.dataWindow() == inHdr.dataWindow()))
-    {
-        THROW (Iex::ArgExc, "Cannot copy pixels from image "
-               "file \"" << in.fileName() << "\" to image "
-               "file \"" << fileName() << "\". The files "
-               "have different data windows.");
-    }
-
-    if (!(hdr.lineOrder() == inHdr.lineOrder()))
-    {
-        THROW (Iex::ArgExc, "Quick pixel copy from image "
-               "file \"" << in.fileName() << "\" to image "
-               "file \"" << fileName() << "\" failed. "
-               "The files have different line orders.");
-    }
-
-    if (!(hdr.compression() == inHdr.compression()))
-    {
-        THROW (Iex::ArgExc, "Quick pixel copy from image "
-               "file \"" << in.fileName() << "\" to image "
-               "file \"" << fileName() << "\" failed. "
-               "The files use different compression methods.");
-    }
-
-    if (!(hdr.channels() == inHdr.channels()))
-    {
-        THROW (Iex::ArgExc, "Quick pixel copy from image "
-               "file \"" << in.fileName() << "\" to image "
-               "file \"" << fileName() << "\" failed.  "
-               "The files have different channel lists.");
-    }
-
-    //
-    // Verify that no pixel data have been written to this file yet.
-    //
-
-    if (!_data->tileOffsets.isEmpty())
-    {
-        THROW (Iex::LogicExc, "Quick pixel copy from image "
-               "file \"" << in.fileName() << "\" to image "
-               "file \"" << fileName() << "\" failed. "
-               "\"" << fileName() << "\" already contains "
-               "pixel data.");
-    }
-
-    //
-    // Calculate the total number of tiles in the file
-    //
-
-    int numAllTiles = 0;
-    switch (levelMode())
-    {
-      case ONE_LEVEL:
-      case MIPMAP_LEVELS:
-
-        for (size_t i_l = 0; i_l < numLevels(); ++i_l)
-        {
-            numAllTiles += numXTiles(i_l) * numYTiles(i_l);
-        }
-        break;
-
-      case RIPMAP_LEVELS:
-
-        for (size_t i_ly = 0; i_ly < numYLevels(); ++i_ly)
-        {
-            for (size_t i_lx = 0; i_lx < numXLevels(); ++i_lx)
-            {
-            numAllTiles += numXTiles(i_lx) * numYTiles(i_ly);
-            }
-        }
-        break;
-
-      default:
-
-        throw Iex::ArgExc ("Unknown LevelMode format.");
-    }
-
-    for (int i = 0; i < numAllTiles; ++i)
-    {
-        const char *pixelData;
-        int pixelDataSize, dx, dy, lx, ly;
-
-        in.rawTileData (dx, dy, lx, ly, pixelData, pixelDataSize);
-        writeTileData (_data, dx, dy, lx, ly, pixelData, pixelDataSize);
-    }
+    copyPixels (*in.tFile());
 }
 
 // ------------------

@@ -78,6 +78,7 @@ class TileOffsets
     int  numTiles();
     bool readTile(ifstream& is);
     bool checkForErrors ();
+    bool isValidTile(int dx, int dy, int lx, int ly);
 
     LevelMode _mode;
     int _numXLevels, _numYLevels;

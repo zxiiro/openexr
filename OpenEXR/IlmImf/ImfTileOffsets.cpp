@@ -184,7 +184,9 @@ TileOffsets::readTile (ifstream& is)
 
     Xdr::skip <StreamIO> (is, dataSize);
 
-    // FIXME, check IsValidTile()
+    if (!isValidTile(tileX, tileY, levelX, levelY))
+        return true;
+
     operator () (tileX, tileY, levelX, levelY) = tileOffset;
     
     return false;
@@ -235,8 +237,11 @@ TileOffsets::reconstructFromFile (ifstream& is)
         // are likely.
         //
 
-	// TODO, add comments about the fact that we break out on the first exception
-	// we don't try to recover tiles after the first exception.
+        //
+        // When trying to reconstruct the tile offsets from the file We break
+        // out on the first exception. We do not try to recover tiles after the
+        // first exception.
+        //
     }
 
     is.clear();
@@ -334,6 +339,48 @@ TileOffsets::isEmpty ()
     return true;
 }
 
+bool
+TileOffsets::isValidTile(int dx, int dy, int lx, int ly)
+{
+    switch (_mode)
+    {
+      case ONE_LEVEL:
+
+        if (lx == 0 && ly == 0 && _tileOffsets.size() > 0 &&
+            _tileOffsets[0].size() > dy &&
+            _tileOffsets[0][dy].size() > dx)
+            return true;
+
+        break;
+
+      case MIPMAP_LEVELS:
+
+        if (lx < _numXLevels && ly < _numYLevels &&
+            _tileOffsets.size() > lx &&
+            _tileOffsets[lx].size() > dy &&
+            _tileOffsets[lx][dy].size() > dx)
+            return true;
+
+        break;
+
+      case RIPMAP_LEVELS:
+
+        if (lx < _numXLevels && ly < _numYLevels &&
+            _tileOffsets.size() > lx + ly*_numXLevels &&
+            _tileOffsets[lx + ly*_numXLevels].size() > dy &&
+            _tileOffsets[lx + ly*_numXLevels][dy].size() > dx)
+            return true;
+
+        break;
+
+      default:
+
+        return false;
+    }
+    
+    return false;
+}
+
 
 long&
 TileOffsets::operator () (int dx, int dy, int lx, int ly)
@@ -348,22 +395,22 @@ TileOffsets::operator () (int dx, int dy, int lx, int ly)
     {
       case ONE_LEVEL:
 
-	return _tileOffsets[0][dy][dx];
-	break;
+        return _tileOffsets[0][dy][dx];
+        break;
 
       case MIPMAP_LEVELS:
 
-	return _tileOffsets[lx][dy][dx];
-	break;
+        return _tileOffsets[lx][dy][dx];
+        break;
 
       case RIPMAP_LEVELS:
 
-	return _tileOffsets[lx + ly*_numXLevels][dy][dx];
-	break;
+        return _tileOffsets[lx + ly*_numXLevels][dy][dx];
+        break;
 
       default:
 
-	throw Iex::ArgExc ("Unknown LevelMode format.");
+        throw Iex::ArgExc ("Unknown LevelMode format.");
     }
 }
 
@@ -388,22 +435,22 @@ TileOffsets::operator () (int dx, int dy, int lx, int ly) const
     {
       case ONE_LEVEL:
 
-	return _tileOffsets[0][dy][dx];
-	break;
+        return _tileOffsets[0][dy][dx];
+        break;
 
       case MIPMAP_LEVELS:
 
-	return _tileOffsets[lx][dy][dx];
-	break;
+        return _tileOffsets[lx][dy][dx];
+        break;
 
       case RIPMAP_LEVELS:
 
-	return _tileOffsets[lx + ly*_numXLevels][dy][dx];
-	break;
+        return _tileOffsets[lx + ly*_numXLevels][dy][dx];
+        break;
 
       default:
 
-	throw Iex::ArgExc ("Unknown LevelMode format.");
+        throw Iex::ArgExc ("Unknown LevelMode format.");
     }
 }
 
