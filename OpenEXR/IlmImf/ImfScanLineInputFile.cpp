@@ -158,10 +158,9 @@ struct ScanLineInputFile::Data
     Compressor::Format	format;
     vector<InSliceInfo>	slices;
 
-    // FIXME, make this a reference
-    ifstream*		is;
+    ifstream&		is;
 
-     Data (): compressor (0) {}
+     Data (ifstream& is): compressor (0), is(is) {}
     ~Data () {delete compressor;}
 };
 
@@ -266,13 +265,13 @@ readPixelData (ScanLineInputFile::Data *ifd, int y, int &minY, int &maxY, int &d
 
     if (ifd->nextLineBufferMinY != minY)
     {
-	ifd->is->seekg (lineOffset);
-	checkError (*ifd->is);
+	ifd->is.seekg (lineOffset);
+	checkError (ifd->is);
     }
 
     #ifdef DEBUG
 
-	assert (long (ifd->is->tellg()) == lineOffset);
+	assert (long (ifd->is.tellg()) == lineOffset);
 
     #endif
 
@@ -282,8 +281,8 @@ readPixelData (ScanLineInputFile::Data *ifd, int y, int &minY, int &maxY, int &d
 
     int yInFile;
 
-    Xdr::read <StreamIO> (*ifd->is, yInFile);
-    Xdr::read <StreamIO> (*ifd->is, dataSize);
+    Xdr::read <StreamIO> (ifd->is, yInFile);
+    Xdr::read <StreamIO> (ifd->is, dataSize);
 
     if (yInFile != minY)
 	throw Iex::InputExc ("Unexpected data block y coordinate.");
@@ -295,8 +294,8 @@ readPixelData (ScanLineInputFile::Data *ifd, int y, int &minY, int &maxY, int &d
     // Read the pixel data.
     //
 
-    ifd->is->read (ifd->lineBuffer, dataSize);
-    checkError (*ifd->is);
+    ifd->is.read (ifd->lineBuffer, dataSize);
+    checkError (ifd->is);
 
     //
     // Keep track of which scan line is the next one in
@@ -316,13 +315,11 @@ readPixelData (ScanLineInputFile::Data *ifd, int y, int &minY, int &maxY, int &d
 ScanLineInputFile::ScanLineInputFile (const char fileName[],
 					const Header &header,
 					ifstream &is):
-    _data (new Data)
+    _data (new Data(is))
 {
     _data->fileName = fileName;
     _data->header = header;
 
-    // FIXME, reference, not pointer
-    _data->is = &is;
     _data->lineOrder = _data->header.lineOrder();
 
     const Box2i &dataWindow = _data->header.dataWindow();
@@ -360,7 +357,7 @@ ScanLineInputFile::ScanLineInputFile (const char fileName[],
     		      _data->linesInBuffer) / _data->linesInBuffer;
 
     _data->lineOffsets.resize (lineOffsetSize);
-    readLineOffsets (*(_data->is), _data->lineOffsets);
+    readLineOffsets (_data->is, _data->lineOffsets);
 }
 
 
