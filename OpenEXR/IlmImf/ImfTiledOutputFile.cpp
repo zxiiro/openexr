@@ -129,15 +129,15 @@ struct TileCoord
     
     bool operator<(const TileCoord& a) const
     {
-        return ((ly < a.ly) || (ly == a.ly && lx < a.lx) ||
+        return (ly < a.ly) || (ly == a.ly && lx < a.lx) ||
                  ((ly == a.ly && lx == a.lx) &&
-                  ((dy < a.dy) || (dy == a.dy && dx < a.dx))));
+                  ((dy < a.dy) || (dy == a.dy && dx < a.dx)));
     }
 
-    // FIXME, maybe go away
+
     bool operator==(const TileCoord& a) const
     {
-        return (lx == a.lx && ly == a.ly && dx == a.dx && dy == a.dy);
+        return lx == a.lx && ly == a.ly && dx == a.dx && dy == a.dy;
     }
 };
 
@@ -147,13 +147,16 @@ struct BufferedTile
     char * pixelData;
     int pixelDataSize;
 
-    // FIXME, allocate memory here, add parameters for pixelDataSize
-    BufferedTile() : pixelData(0), pixelDataSize(0)
+    BufferedTile(const char* data, int size) : pixelData(0), pixelDataSize(size)
     {
-        // empty
+	pixelData = new char[pixelDataSize];
+	memcpy (pixelData, data, pixelDataSize);
     }
 
-    // TODO, add destructor that deallocates the memory
+    ~BufferedTile()
+    {
+	delete [] pixelData;
+    }
 };
 
 
@@ -216,14 +219,9 @@ public:
         // Delete all the tile buffers, if any still happen to exist
         //
         
-        map<TileCoord, BufferedTile*>::iterator i;
-        
+        map<TileCoord, BufferedTile*>::iterator i;        
         for (i = tileMap.begin(); i != tileMap.end(); ++i)
-        {
-            delete [] i->second;
-	    // FIXME, get rid of erases
-            //tileMap.erase(i++);
-        }
+            delete i->second;
     
     }
 };
@@ -700,8 +698,6 @@ bufferedTileWrite (TiledOutputFile::Data *ofd,
                                i->second->pixelData,
                                i->second->pixelDataSize);
 
-	    // FIXME, the destructor will take care of this
-            delete [] i->second->pixelData;
             delete i->second;
             ofd->tileMap.erase(i);
             
@@ -719,15 +715,10 @@ bufferedTileWrite (TiledOutputFile::Data *ofd,
         // Create a new BufferedTile, copy the pixelData into it, and
         // insert it into the tileMap.
         //
-        
-        BufferedTile* bt = new BufferedTile();
-        bt->pixelData = new char[pixelDataSize];
 
-        // FIXME, move to constructor
-        memcpy (bt->pixelData, (const char *) pixelData, pixelDataSize);
-        bt->pixelDataSize = pixelDataSize;
-
-        ofd->tileMap.insert(std::make_pair(currentTile, bt));
+	ofd->tileMap.insert(std::make_pair(currentTile,
+		new BufferedTile((const char *)pixelData,
+				 pixelDataSize)));
     }
 }
 
@@ -889,7 +880,6 @@ TiledOutputFile::TiledOutputFile (const char fileName[], const Header &header):
 	if (!_data->os)
 	    Iex::throwErrnoExc();
 
-	// FIXME, use isTiled flag
 	_data->header.writeTo(_data->os, true);
 
 	_data->tileOffsetsPosition = writeTileOffsets(_data);
