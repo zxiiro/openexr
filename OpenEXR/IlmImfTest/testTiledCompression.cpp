@@ -183,14 +183,13 @@ writeRead (const Array2D<unsigned int> &pi1,
                         V2i (xOffset + width - 1, yOffset + height - 1))));
 
     hdr.compression() = comp;
+    hdr.lineOrder() = lorder;
 
     hdr.channels().insert ("I", Channel (UINT));
     hdr.channels().insert ("H", Channel (HALF));
     hdr.channels().insert ("F", Channel (FLOAT));
     
-    hdr.insert ("tiles", TileDescriptionAttribute (TileDescription(xSize,
-                                                                   ySize,
-                                                                   ONE_LEVEL)));
+    hdr.setTileDescription(TileDescription(xSize, ySize, ONE_LEVEL));
     {
         FrameBuffer fb; 
 

@@ -85,17 +85,15 @@ writeReadRGBAONE (const char fileName[],
 	       int width,
 	       int height,
 	       RgbaChannels channels,
-	       LineOrder lorder,
 	       Compression comp,
            int xSize, int ySize)
 {
     cout << "levelMode 0, " <<
-            ", line order " << lorder <<
             ", compression " << comp <<
             ", tileSize " << xSize << "x" << ySize << endl;
 
     Header header (width, height);
-    header.lineOrder() = lorder;
+    header.lineOrder() = INCREASING_Y;
     header.compression() = comp;
     
     Array2D<Rgba> p1 (height, width);
@@ -181,17 +179,15 @@ writeReadRGBAMIP (const char fileName[],
 	       int width,
 	       int height,
 	       RgbaChannels channels,
-	       LineOrder lorder,
 	       Compression comp,
            int xSize, int ySize)
 {
     cout << "levelMode 1, " <<
-            ", line order " << lorder <<
             ", compression " << comp <<
             ", tileSize " << xSize << "x" << ySize << endl;
 
     Header header (width, height);
-    header.lineOrder() = lorder;
+    header.lineOrder() = INCREASING_Y;
     header.compression() = comp;
     
     std::vector< Array2D<Rgba> > levels;
@@ -226,9 +222,6 @@ writeReadRGBAMIP (const char fileName[],
 
         TiledRgbaInputFile in (fileName);
         const Box2i &dw = in.dataWindow();
-
-        int w = dw.max.x - dw.min.x + 1;
-        int h = dw.max.y - dw.min.y + 1;
         int dwx = dw.min.x;
         int dwy = dw.min.y;
 
@@ -298,17 +291,15 @@ writeReadRGBARIP (const char fileName[],
 	       int width,
 	       int height,
 	       RgbaChannels channels,
-	       LineOrder lorder,
 	       Compression comp,
            int xSize, int ySize)
 {
     cout << "levelMode 2, " <<
-            ", line order " << lorder <<
             ", compression " << comp <<
             ", tileSize " << xSize << "x" << ySize << endl;
 
     Header header (width, height);
-    header.lineOrder() = lorder;
+    header.lineOrder() = INCREASING_Y;
     header.compression() = comp;
     
     std::vector< std::vector< Array2D<Rgba> > > levels;
@@ -348,8 +339,6 @@ writeReadRGBARIP (const char fileName[],
 
         TiledRgbaInputFile in (fileName);
         const Box2i &dw = in.dataWindow();
-        int w = dw.max.x - dw.min.x + 1;
-        int h = dw.max.y - dw.min.y + 1;
         int dwx = dw.min.x;
         int dwy = dw.min.y;        
         
@@ -436,20 +425,20 @@ writeRead (int W, int H, Compression comp, int xSize, int ySize)
     const char * filename = "/var/tmp/imf_test_tiled_rgba.exr";
 #endif
 
-    writeReadRGBAONE (filename, W, H, WRITE_RGBA, INCREASING_Y,
-                      comp, xSize, ySize);
-
-    writeReadRGBAMIP (filename, W, H, WRITE_RGBA, INCREASING_Y,
-                      comp, xSize, ySize);
-
-    writeReadRGBARIP (filename, W, H, WRITE_RGBA, INCREASING_Y,
-                      comp, xSize, ySize);
+    writeReadRGBAONE (filename, W, H, WRITE_RGBA, comp, xSize, ySize);
+    writeReadRGBAMIP (filename, W, H, WRITE_RGBA, comp, xSize, ySize);
+    writeReadRGBARIP (filename, W, H, WRITE_RGBA, comp, xSize, ySize);
 }
 
 } // namespace
 
 
-
+// FIXME,
+// put lineorder in different test
+// put triggerBuffering and triggerSeeks in a different test
+//
+// use 3 different image sizes:
+// 1)
 void
 testTiledRgba ()
 {
