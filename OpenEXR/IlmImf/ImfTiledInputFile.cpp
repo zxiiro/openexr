@@ -44,6 +44,7 @@
 #include <ImfTileDescriptionAttribute.h>
 #include <ImfChannelList.h>
 #include <ImfMisc.h>
+#include <ImfTiledMisc.h>
 #include <ImfIO.h>
 #include <ImfCompressor.h>
 #include <ImathBox.h>
@@ -58,6 +59,7 @@
 #include <ImathVec.h>
 #include <ImfConvert.h>
 #include <ImfVersion.h>
+
 
 #if defined PLATFORM_WIN32
 namespace
@@ -1276,8 +1278,7 @@ TiledInputFile::readTile (int dx, int dy, int lx, int ly)
         }
 
         // calculate information about the tile
-	// FIXME, dataWindowForTile
-        Box2i tileRange = pixelRangeForTile(dx, dy, lx, ly);
+        Box2i tileRange = dataWindowForTile(dx, dy, lx, ly);
         int numPixelsInTile = (tileRange.max.x - tileRange.min.x + 1) *
                               (tileRange.max.y - tileRange.min.y + 1);
 
@@ -2047,14 +2048,32 @@ TiledInputFile::numYLevels () const
 int
 TiledInputFile::levelWidth (int lx) const
 {
-    return (_data->maxX - _data->minX + 1) / (int)pow(2, lx);
+    try
+    {
+	return levelSize(_data->minX, _data->maxX, lx);
+    }
+    catch (Iex::BaseExc &e)
+    {
+	REPLACE_EXC (e, "Error calling levelWidth() on image "
+			"file \"" << fileName() << "\". " << e);
+	throw;
+    }
 }
 
 
 int
 TiledInputFile::levelHeight (int ly) const
 {
-    return (_data->maxY - _data->minY + 1) / (int)pow(2, ly);
+    try
+    {
+	return levelSize(_data->minY, _data->maxY, ly);
+    }
+    catch (Iex::BaseExc &e)
+    {
+	REPLACE_EXC (e, "Error calling levelWidth() on image "
+			"file \"" << fileName() << "\". " << e);
+	throw;
+    }
 }
 
 
@@ -2104,17 +2123,15 @@ TiledInputFile::numYTiles (int ly) const
 // FIXME, put this stuff in a common place
 //
 //
-
-// FIXME, dataWindowForLevel
 Box2i
-TiledInputFile::pixelRangeForLevel (int l) const
+TiledInputFile::dataWindowForLevel (int l) const
 {
-    return pixelRangeForLevel(l, l);
+    return dataWindowForLevel(l, l);
 }
 
 
 Box2i
-TiledInputFile::pixelRangeForLevel (int lx, int ly) const
+TiledInputFile::dataWindowForLevel (int lx, int ly) const
 {
     try
     {
@@ -2125,7 +2142,7 @@ TiledInputFile::pixelRangeForLevel (int lx, int ly) const
     }
     catch (Iex::BaseExc &e)
     {
-        REPLACE_EXC (e, "Error calling pixelRangeForLevel() on image "
+        REPLACE_EXC (e, "Error calling dataWindowForLevel() on image "
                     "file \"" << fileName() << "\". " << e);
         throw;
 
@@ -2134,16 +2151,15 @@ TiledInputFile::pixelRangeForLevel (int lx, int ly) const
 }
 
 
-// FIXME, dataWindowForTile
 Box2i
-TiledInputFile::pixelRangeForTile (int dx, int dy, int l) const
+TiledInputFile::dataWindowForTile (int dx, int dy, int l) const
 {
-    return pixelRangeForTile(dx, dy, l, l);
+    return dataWindowForTile(dx, dy, l, l);
 }
 
 
 Box2i
-TiledInputFile::pixelRangeForTile (int dx, int dy, int lx, int ly) const
+TiledInputFile::dataWindowForTile (int dx, int dy, int lx, int ly) const
 {
     try
     {
@@ -2155,9 +2171,7 @@ TiledInputFile::pixelRangeForTile (int dx, int dy, int lx, int ly) const
 
         V2i tileMax = tileMin + V2i(tileXSize() - 1, tileYSize() - 1);
 
-	// FIXME, use dataWindowForTile
-        V2i levelMax = V2i(_data->minX, _data->minY) +
-                       V2i(levelWidth(lx) - 1, levelHeight(ly) -1);
+        V2i levelMax = dataWindowForLevel(lx, ly).max;
 
 #ifdef PLATFORM_WIN32
         tileMax = V2i(min(tileMax[0], levelMax[0]), min(tileMax[1], levelMax[1]));
@@ -2169,7 +2183,7 @@ TiledInputFile::pixelRangeForTile (int dx, int dy, int lx, int ly) const
     }
     catch (Iex::BaseExc &e)
     {
-        REPLACE_EXC (e, "Error calling pixelRangeForTile() on image "
+        REPLACE_EXC (e, "Error calling dataWindowForTile() on image "
                         "file \"" << fileName() << "\". " << dx <<
                         ", " << dy << ", " << lx << ", " << ly << e);
         throw;
@@ -2265,7 +2279,7 @@ TiledInputFile::readPixels(int scanLine1, int scanLine2)
         {
             for (int i = 0; i < numXTiles(0); ++i)
             {
-                Box2i tileRange = pixelRangeForTile(i, j, 0);
+                Box2i tileRange = dataWindowForTile(i, j, 0);
 
 #ifdef PLATFORM_WIN32
                 int minYThisTile = max (minY, tileRange.min.y);

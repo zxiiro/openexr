@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2002, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2003, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
 // 
 // All rights reserved.
@@ -358,32 +358,32 @@ TiledRgbaOutputFile::numYTiles (int ly) const
      return _outputFile->numYTiles(ly);
 }
 
-// FIXME, dataWindowFor...
+
 Imath::Box2i
-TiledRgbaOutputFile::pixelRangeForLevel (int l) const
+TiledRgbaOutputFile::dataWindowForLevel (int l) const
 {
-     return _outputFile->pixelRangeForLevel(l);
+     return _outputFile->dataWindowForLevel(l);
 }
 
 
 Imath::Box2i
-TiledRgbaOutputFile::pixelRangeForLevel (int lx, int ly) const
+TiledRgbaOutputFile::dataWindowForLevel (int lx, int ly) const
 {
-     return _outputFile->pixelRangeForLevel(lx, ly);
+     return _outputFile->dataWindowForLevel(lx, ly);
 }
 
 
 Imath::Box2i
-TiledRgbaOutputFile::pixelRangeForTile (int dx, int dy, int l) const
+TiledRgbaOutputFile::dataWindowForTile (int dx, int dy, int l) const
 {
-     return _outputFile->pixelRangeForTile(dx, dy, l);
+     return _outputFile->dataWindowForTile(dx, dy, l);
 }
 
 
 Imath::Box2i
-TiledRgbaOutputFile::pixelRangeForTile (int dx, int dy, int lx, int ly) const
+TiledRgbaOutputFile::dataWindowForTile (int dx, int dy, int lx, int ly) const
 {
-     return _outputFile->pixelRangeForTile(dx, dy, lx, ly);
+     return _outputFile->dataWindowForTile(dx, dy, lx, ly);
 }
 
 
@@ -607,30 +607,30 @@ TiledRgbaInputFile::numYTiles (int ly) const
 
 
 Imath::Box2i
-TiledRgbaInputFile::pixelRangeForLevel (int l) const
+TiledRgbaInputFile::dataWindowForLevel (int l) const
 {
-     return _inputFile->pixelRangeForLevel(l);
+     return _inputFile->dataWindowForLevel(l);
 }
 
 
 Imath::Box2i
-TiledRgbaInputFile::pixelRangeForLevel (int lx, int ly) const
+TiledRgbaInputFile::dataWindowForLevel (int lx, int ly) const
 {
-     return _inputFile->pixelRangeForLevel(lx, ly);
+     return _inputFile->dataWindowForLevel(lx, ly);
 }
 
 
 Imath::Box2i
-TiledRgbaInputFile::pixelRangeForTile (int dx, int dy, int l) const
+TiledRgbaInputFile::dataWindowForTile (int dx, int dy, int l) const
 {
-     return _inputFile->pixelRangeForTile(dx, dy, l);
+     return _inputFile->dataWindowForTile(dx, dy, l);
 }
 
 
 Imath::Box2i
-TiledRgbaInputFile::pixelRangeForTile (int dx, int dy, int lx, int ly) const
+TiledRgbaInputFile::dataWindowForTile (int dx, int dy, int lx, int ly) const
 {
-     return _inputFile->pixelRangeForTile(dx, dy, lx, ly);
+     return _inputFile->dataWindowForTile(dx, dy, lx, ly);
 }
 
 

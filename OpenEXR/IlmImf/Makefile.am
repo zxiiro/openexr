@@ -37,7 +37,7 @@ libIlmImf_la_SOURCES = ImfAttribute.cpp ImfBoxAttribute.cpp ImfCRgbaFile.cpp \
 		       ImfTileDescriptionAttribute.h ImfTiledInputFile.cpp \
 		       ImfTiledInputFile.h ImfTiledOutputFile.cpp \
 		       ImfTiledOutputFile.h ImfTiledRgbaFile.cpp \
-		       ImfTiledRgbaFile.h 
+		       ImfTiledRgbaFile.h ImfTiledMisc.cpp ImfTiledMisc.h
 
 
 libIlmImfincludedir = $(includedir)/OpenEXR

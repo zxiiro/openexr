@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2002, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2003, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
 // 
 // All rights reserved.
@@ -214,7 +214,7 @@ class TiledInputFile
     //-------------------------------------------------------------------
     // Level pixel ranges:
     //
-    // pixelRangeForLevel(lx, ly) returns a 2-dimensional
+    // dataWindowForLevel(lx, ly) returns a 2-dimensional
     // region of valid pixel coordinates for a level with level number
     // (lx, ly)
     //
@@ -225,20 +225,20 @@ class TiledInputFile
     //      (dataWindow.min.x + levelWidth(lx) - 1,
     //       dataWindow.min.y + levelHeight(ly) - 1)
     //
-    // pixelRangeForLevel(level) is a convenience function used
+    // dataWindowForLevel(level) is a convenience function used
     // for ONE_LEVEL and MIPMAP_LEVELS files.  It returns
-    // pixelRangeForLevel(level, level).
+    // dataWindowForLevel(level, level).
     //
     //-------------------------------------------------------------------
 
-    Imath::Box2i	pixelRangeForLevel (int l = 0) const;
-    Imath::Box2i	pixelRangeForLevel (int lx, int ly) const;
+    Imath::Box2i	dataWindowForLevel (int l = 0) const;
+    Imath::Box2i	dataWindowForLevel (int lx, int ly) const;
 
 
     //-------------------------------------------------------------------
     // Tile pixel ranges:
     //
-    // pixelRangeForTile(dx, dy, lx, ly) returns a 2-dimensional
+    // dataWindowForTile(dx, dy, lx, ly) returns a 2-dimensional
     // region of valid pixel coordinates for a tile with tile coordinates
     // (dx,dy) and level number (lx, ly).
     //
@@ -250,14 +250,14 @@ class TiledInputFile
     //      (dataWindow.min.x + (dx + 1) * tileXSize() - 1,
     //       dataWindow.min.y + (dy + 1) * tileYSize() - 1)
     //
-    // pixelRangeForTile(dx, dy, level) is a convenience function
+    // dataWindowForTile(dx, dy, level) is a convenience function
     // used for ONE_LEVEL and MIPMAP_LEVELS files.  It returns
-    // pixelRangeForTile(dx, dy, level, level).
+    // dataWindowForTile(dx, dy, level, level).
     //
     //-------------------------------------------------------------------
 
-    Imath::Box2i	pixelRangeForTile (int dx, int dy, int l = 0) const;
-    Imath::Box2i	pixelRangeForTile (int dx, int dy,
+    Imath::Box2i	dataWindowForTile (int dx, int dy, int l = 0) const;
+    Imath::Box2i	dataWindowForTile (int dx, int dy,
                                            int lx, int ly) const;
 
     //----------------------------------------------------------------

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2002, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2003, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
 // 
 // All rights reserved.
@@ -46,6 +46,7 @@
 #include <ImfTileDescriptionAttribute.h>
 #include <ImfChannelList.h>
 #include <ImfMisc.h>
+#include <ImfTiledMisc.h>
 #include <ImfIO.h>
 #include <ImfCompressor.h>
 #include <ImathBox.h>
@@ -1239,7 +1240,7 @@ TiledOutputFile::writeTile (int dx, int dy, int lx, int ly)
 
 	char *toPtr = _data->tileBuffer;
 
-	Box2i tileRange = pixelRangeForTile(dx, dy, lx, ly);
+	Box2i tileRange = dataWindowForTile(dx, dy, lx, ly);
 	int numPixelsInTile = (tileRange.max.x - tileRange.min.x + 1) *
 			      (tileRange.max.y - tileRange.min.y + 1);
 
@@ -1858,16 +1859,12 @@ TiledOutputFile::levelWidth (int lx) const
 {
     try
     {
-	if (lx < 0 || lx >= numXLevels())
-	    throw Iex::ArgExc ("Parameter not in valid range.");
-
-	// FIXME, take the max of this with 1
-	return (_data->maxX - _data->minX + 1) / (1 << lx);
+	return levelSize(_data->minX, _data->maxX, lx);
     }
     catch (Iex::BaseExc &e)
     {
-	REPLACE_EXC (e, "Error calling numXTiles() on image "
-		     "file \"" << fileName() << "\". " << e);
+	REPLACE_EXC (e, "Error calling levelWidth() on image "
+			"file \"" << fileName() << "\". " << e);
 	throw;
     }
 }
@@ -1878,16 +1875,12 @@ TiledOutputFile::levelHeight (int ly) const
 {
     try
     {
-	if (ly < 0 || ly >= numYLevels())
-	    throw Iex::ArgExc ("Parameter not in valid range.");
-
-	// FIXME, take the max of this with 1
-	return (_data->maxY - _data->minY + 1) / (1 << ly);
+	return levelSize(_data->minY, _data->maxY, ly);
     }
     catch (Iex::BaseExc &e)
     {
-	REPLACE_EXC (e, "Error calling numXTiles() on image "
-		     "file \"" << fileName() << "\". " << e);
+	REPLACE_EXC (e, "Error calling levelWidth() on image "
+			"file \"" << fileName() << "\". " << e);
 	throw;
     }
 }
@@ -1931,17 +1924,15 @@ TiledOutputFile::numYTiles (int ly) const
 }
 
 
-// FIXME, rename to dataWindowForLevel
-// fix comments refering to pixelRange and pixel range, etc
 Box2i
-TiledOutputFile::pixelRangeForLevel (int l) const
+TiledOutputFile::dataWindowForLevel (int l) const
 {
-    return pixelRangeForLevel(l, l);
+    return dataWindowForLevel(l, l);
 }
 
 
 Box2i
-TiledOutputFile::pixelRangeForLevel (int lx, int ly) const
+TiledOutputFile::dataWindowForLevel (int lx, int ly) const
 {
     try
     {
@@ -1952,24 +1943,22 @@ TiledOutputFile::pixelRangeForLevel (int lx, int ly) const
     }
     catch (Iex::BaseExc &e)
     {
-	REPLACE_EXC (e, "Error calling pixelRangeForLevel() on image "
+	REPLACE_EXC (e, "Error calling dataWindowForLevel() on image "
 		     "file \"" << fileName() << "\". " << e);
 	throw;
     }
 }
 
 
-// FIXME, rename to dataWindowForTile
-// fix comments refering to pixelRange and pixel range, etc
 Box2i
-TiledOutputFile::pixelRangeForTile (int dx, int dy, int l) const
+TiledOutputFile::dataWindowForTile (int dx, int dy, int l) const
 {
-    return pixelRangeForTile(dx, dy, l, l);
+    return dataWindowForTile(dx, dy, l, l);
 }
 
 
 Box2i
-TiledOutputFile::pixelRangeForTile (int dx, int dy, int lx, int ly) const
+TiledOutputFile::dataWindowForTile (int dx, int dy, int lx, int ly) const
 {
     try
     {
@@ -1995,7 +1984,7 @@ TiledOutputFile::pixelRangeForTile (int dx, int dy, int lx, int ly) const
     }
     catch (Iex::BaseExc &e)
     {
-	REPLACE_EXC (e, "Error calling pixelRangeForTile() on image "
+	REPLACE_EXC (e, "Error calling dataWindowForTile() on image "
 		     "file \"" << fileName() << "\". " << e);
 	throw;
     }
