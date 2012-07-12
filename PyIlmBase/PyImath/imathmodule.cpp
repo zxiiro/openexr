@@ -397,6 +397,34 @@ BOOST_PYTHON_MODULE(imath)
     // Initialize constants
     //
 
+    scope().attr("EULER_XYZ") = Imath::Eulerf::XYZ;
+    scope().attr("EULER_XZY") = Imath::Eulerf::XZY;
+    scope().attr("EULER_YZX") = Imath::Eulerf::YZX;
+    scope().attr("EULER_YXZ") = Imath::Eulerf::YXZ;
+    scope().attr("EULER_ZXY") = Imath::Eulerf::ZXY;
+    scope().attr("EULER_ZYX") = Imath::Eulerf::ZYX;
+    scope().attr("EULER_XZX") = Imath::Eulerf::XZX;
+    scope().attr("EULER_XYX") = Imath::Eulerf::XYX;
+    scope().attr("EULER_YXY") = Imath::Eulerf::YXY;
+    scope().attr("EULER_YZY") = Imath::Eulerf::YZY;
+    scope().attr("EULER_ZYZ") = Imath::Eulerf::ZYZ;
+    scope().attr("EULER_ZXZ") = Imath::Eulerf::ZXZ;
+    scope().attr("EULER_XYZr") = Imath::Eulerf::XYZr;
+    scope().attr("EULER_XZYr") = Imath::Eulerf::XZYr;
+    scope().attr("EULER_YZXr") = Imath::Eulerf::YZXr;
+    scope().attr("EULER_YXZr") = Imath::Eulerf::YXZr;
+    scope().attr("EULER_ZXYr") = Imath::Eulerf::ZXYr;
+    scope().attr("EULER_ZYXr") = Imath::Eulerf::ZYXr;
+    scope().attr("EULER_XZXr") = Imath::Eulerf::XZXr;
+    scope().attr("EULER_XYXr") = Imath::Eulerf::XYXr;
+    scope().attr("EULER_YXYr") = Imath::Eulerf::YXYr;
+    scope().attr("EULER_YZYr") = Imath::Eulerf::YZYr;
+    scope().attr("EULER_ZYZr") = Imath::Eulerf::ZYZr;
+    scope().attr("EULER_ZXZr") = Imath::Eulerf::ZXZr;
+    scope().attr("EULER_X_AXIS") = Imath::Eulerf::X;
+    scope().attr("EULER_Y_AXIS") = Imath::Eulerf::Y;
+    scope().attr("EULER_Z_AXIS") = Imath::Eulerf::Z;
+    
     scope().attr("INT_MIN") = Imath::limits<int>::min();
     scope().attr("INT_MAX") = Imath::limits<int>::max();
     scope().attr("INT_SMALLEST") = Imath::limits<int>::smallest();
