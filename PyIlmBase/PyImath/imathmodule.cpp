@@ -318,7 +318,7 @@ BOOST_PYTHON_MODULE(imath)
     register_Matrix44<double>();
 
     //
-    // M44Array
+    // M33/44Array
     //
     class_<FixedArray<Imath::M44d> > m44d_class = register_M44Array<double>();
     class_<FixedArray<Imath::M44f> > m44f_class = register_M44Array<float>();
@@ -343,11 +343,22 @@ BOOST_PYTHON_MODULE(imath)
     register_Color4<unsigned char>();
     register_Color4<float>();
 
+    //
+    // C3/4Array
+    //
+    class_<FixedArray<Imath::Color3f> > c3f_class = register_Color3Array<float>();
+    class_<FixedArray<Imath::Color3c> > c3c_class = register_Color3Array<unsigned char>();
+    add_explicit_construction_from_type<Imath::V3f>(c3f_class);
+    add_explicit_construction_from_type<Imath::V3d>(c3f_class);
+
+    class_<FixedArray<Imath::Color4f> > c4f_class = register_Color4Array<float>();
+    class_<FixedArray<Imath::Color4c> > c4c_class = register_Color4Array<unsigned char>();
+
+    //
+    // Color4Array
+    //
     register_Color4Array2D<float>();
     register_Color4Array2D<unsigned char>();
-
-    register_Color4Array<float>();
-    register_Color4Array<unsigned char>();
 
     //
     // Frustum
