@@ -16,6 +16,7 @@ libPyImath_la_SOURCES = PyImath.cpp \
     PyImathLine.cpp \
     PyImathMatrix33.cpp \
     PyImathMatrix44.cpp \
+    PyImathNoise.cpp \
     PyImathPlane.cpp \
     PyImathQuat.cpp \
     PyImathRandom.cpp \
@@ -51,6 +52,7 @@ libPyImathinclude_HEADERS = PyImath.h \
     PyImathLine.h \
     PyImathMathExc.h \
     PyImathMatrix.h \
+    PyImathNoise.h \
     PyImathOperators.h \
     PyImathPlane.h \
     PyImathQuat.h \
