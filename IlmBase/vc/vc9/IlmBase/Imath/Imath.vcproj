@@ -426,6 +426,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\..\Imath\ImathExport.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\..\Imath\ImathFrame.h"
 				>
 			</File>
