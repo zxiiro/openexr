@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\..\Iex;..\..\..\..\config.windows"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;IEX_EXPORTS;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;IEX_EXPORTS;_CRT_SECURE_NO_WARNINGS;PLATFORM_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
