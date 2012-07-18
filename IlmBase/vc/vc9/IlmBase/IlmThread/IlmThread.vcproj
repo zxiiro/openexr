@@ -100,7 +100,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="..\$(IntDir)\createDLL -n$(OutDir)\IlmThread.map -M$(PlatformName) -l$(IntDir) -i$(OutDir)\IlmThread.lib &amp;&amp; ..\..\..\installIlmThread.cmd $(IntDir)"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -269,7 +269,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="..\$(IntDir)\createDLL -n$(OutDir)\IlmThread.map -M$(PlatformName) -l$(IntDir) -i$(OutDir)\IlmThread.lib &amp;&amp; ..\..\..\installIlmThread.cmd $(IntDir)"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration

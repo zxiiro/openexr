@@ -101,7 +101,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="..\$(IntDir)\createDLL -n$(OutDir)\Iex.map -M$(PlatformName) -l$(IntDir) -i$(OutDir)\Iex.lib &amp;&amp; ..\..\..\installIex.cmd $(IntDir)"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -271,7 +271,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="..\$(IntDir)\createDLL -n$(OutDir)\Iex.map -M$(PlatformName) -l$(IntDir) -i$(OutDir)\Iex.lib &amp;&amp; ..\..\..\installIex.cmd $(IntDir)"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration

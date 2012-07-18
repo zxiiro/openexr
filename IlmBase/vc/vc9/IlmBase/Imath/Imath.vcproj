@@ -101,7 +101,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="..\$(IntDir)\createDLL -n$(OutDir)\Imath.map -M$(PlatformName) -l$(IntDir) -i$(OutDir)\Imath.lib &amp;&amp; ..\..\..\installImath.cmd $(IntDir)"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
@@ -270,7 +270,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="..\$(IntDir)\createDLL -n$(OutDir)\Imath.map -M$(PlatformName) -l$(IntDir) -i$(OutDir)\Imath.lib &amp;&amp; ..\..\..\installImath.cmd $(IntDir)"
+				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
