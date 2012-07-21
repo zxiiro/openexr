@@ -10,12 +10,12 @@ echo Installing into %intdir%
 set instpath=%deploypath%\lib\%intdir%
 if not exist %instpath% mkdir %instpath%
 
-copy ..\%intdir%\Imath.lib %instpath%
-copy ..\%intdir%\Imath.exp %instpath%
+copy ..\Win32\%intdir%\Imath.lib %instpath%
+copy ..\Win32\%intdir%\Imath.exp %instpath%
 
 set instpath=%deploypath%\bin\%intdir%
 if not exist %instpath% mkdir %instpath%
-copy ..\%intdir%\Imath.dll %instpath%
+copy ..\Win32\%intdir%\Imath.dll %instpath%
 
 cd %src%
 set instpath=..\..\..\Deploy\include

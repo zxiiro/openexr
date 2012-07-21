@@ -9,12 +9,12 @@ if %intdir%=="" set intdir=Release
 echo Installing into %intdir%
 set instpath=%deploypath%\lib\%intdir%
 if not exist %instpath% mkdir %instpath%
-copy ..\%intdir%\Half.lib %instpath%
-copy ..\%intdir%\Half.exp %instpath%
+copy ..\Win32\%intdir%\Half.lib %instpath%
+copy ..\Win32\%intdir%\Half.exp %instpath%
 
 set instpath=%deploypath%\bin\%intdir%
 if not exist %instpath% mkdir %instpath%
-copy ..\%intdir%\Half.dll %instpath%
+copy ..\Win32\%intdir%\Half.dll %instpath%
 
 cd %src%
 set instpath=..\..\..\Deploy\include

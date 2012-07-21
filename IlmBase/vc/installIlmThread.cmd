@@ -10,12 +10,12 @@ echo Installing into %intdir%
 set instpath=%deploypath%\lib\%intdir%
 if not exist %instpath% mkdir %instpath%
 
-copy ..\%intdir%\IlmThread.lib %instpath%
-copy ..\%intdir%\IlmThread.exp %instpath%
+copy ..\Win32\%intdir%\IlmThread.lib %instpath%
+copy ..\Win32\%intdir%\IlmThread.exp %instpath%
 
 set instpath=%deploypath%\bin\%intdir%
 if not exist %instpath% mkdir %instpath%
-copy ..\%intdir%\IlmThread.dll %instpath%
+copy ..\Win32\%intdir%\IlmThread.dll %instpath%
 
 cd %src%
 set instpath=..\..\..\Deploy\include

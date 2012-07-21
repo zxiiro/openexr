@@ -101,7 +101,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installImath.cmd Debug"
 			/>
 		</Configuration>
 		<Configuration
@@ -270,7 +270,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installImath.cmd Release"
 			/>
 		</Configuration>
 		<Configuration

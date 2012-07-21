@@ -103,7 +103,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installHalf.cmd Debug"
 			/>
 		</Configuration>
 		<Configuration
@@ -276,7 +276,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installHalf.cmd Release"
 			/>
 		</Configuration>
 		<Configuration

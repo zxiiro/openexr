@@ -100,7 +100,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installIlmThread.cmd Debug"
 			/>
 		</Configuration>
 		<Configuration
@@ -269,7 +269,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installIlmThread.cmd Release"
 			/>
 		</Configuration>
 		<Configuration

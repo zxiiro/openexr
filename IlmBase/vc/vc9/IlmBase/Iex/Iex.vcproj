@@ -101,7 +101,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installIex.cmd Debug"
 			/>
 		</Configuration>
 		<Configuration
@@ -271,7 +271,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine=""
+				CommandLine="..\..\..\installIex.cmd Release"
 			/>
 		</Configuration>
 		<Configuration
