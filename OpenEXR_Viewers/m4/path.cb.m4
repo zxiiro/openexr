@@ -12,16 +12,22 @@ AC_ARG_WITH(cg-prefix,[  --with-cg-prefix=PFX  Prefix where Cg is installed (opt
 
   if test x$cg_prefix != x ; then
     CG_CXXFLAGS="-I$cg_prefix/include"
-    CG_LDFLAGS="-L$cg_prefix/lib -lGL -lCg -lCgGL -lGLU -lpthread -lglut"
+    CG_LDFLAGS="-L$cg_prefix/lib"
+    if [[ -e $cg_prefix/lib64 ]] ; then
+      CG_LDFLAGS="$CG_LDFLAGS -L$cg_prefix/lib64"
+    fi
+    CG_LIBS="-lGL -lCg -lCgGL -lGLU -lpthread -lglut"
   else
     case $host_os in
       darwin*)
         CG_CXXFLAGS=""
         CG_LDFLAGS="-framework Cg -framework AGL -framework OpenGL -framework GLUT"
+        CG_LIBS=""
         ;;
       *)
         CG_CXXFLAGS=""
-        CG_LDFLAGS="-lGL -lCg -lCgGL -lGLU -lpthread -lglut"
+        CG_LDFLAGS=""
+        CG_LIBS="-lGL -lCg -lCgGL -lGLU -lpthread -lglut"
         ;;
     esac
   fi
@@ -31,9 +37,10 @@ AC_ARG_WITH(cg-prefix,[  --with-cg-prefix=PFX  Prefix where Cg is installed (opt
 
   ac_save_CXXFLAGS="$CXXFLAGS"
   ac_save_LDFLAGS="$LDFLAGS"
+  ac_save_LIB="$LIBS"
   CXXFLAGS="$CXXFLAGS $CG_CXXFLAGS"
   LDFLAGS="$CG_LDFLAGS"
-
+  LIBS="$CG_LIBS"
   case $host_os in
     darwin*)
       AC_LANG_SAVE
@@ -62,7 +69,7 @@ AC_ARG_WITH(cg-prefix,[  --with-cg-prefix=PFX  Prefix where Cg is installed (opt
   AC_LANG_RESTORE
   CXXFLAGS="$ac_save_CXXFLAGS"
   LDFLAGS="$ac_save_LDFLAGS"
-
+  LIBS="$ac_save_LIBS"
   if test "x$no_cg" = "x" ; then
     AC_MSG_RESULT(yes)
       ifelse([$1], , :, [$1])
@@ -85,5 +92,6 @@ AC_ARG_WITH(cg-prefix,[  --with-cg-prefix=PFX  Prefix where Cg is installed (opt
   fi
   AC_SUBST(CG_CXXFLAGS)
   AC_SUBST(CG_LDFLAGS)
+  AC_SUBST(CG_LIBS)
 ])
   

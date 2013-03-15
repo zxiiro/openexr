@@ -63,6 +63,19 @@ AM_PATH_PKGCONFIG(
    [openexr-prefix])
 
 dnl
+dnl get ccflags and libs from ctl packages, then check
+dnl whether test programs compile
+AM_PATH_PKGCONFIG(
+   [CTL_CXXFLAGS],
+   [CTL_LDFLAGS],
+   [CTL_LIBS],
+   [CTL],
+   [CTL OpenEXR],
+   [$LIB64_IF_EXISTS -L/usr/local/lib],
+   [-lIlmCtlSimd -lIlmCtlMath -lIlmCtl -lImath -lHalf -lIex -lIlmThread -lpthread],
+   [ctl-prefix])
+
+dnl
 dnl check optional OpenexrCTL (see comment above)
 dnl
 AM_PATH_PKGCONFIG(
@@ -118,9 +131,9 @@ AM_COMPILELINKRUN(
 AM_COMPILELINKRUN(
    [OpenEXR_CTL],
    [openexrctltest],
-   [$OPENEXR_CTL_CXXFLAGS],
-   [$OPENEXR_CTL_LDFLAGS],
-   [$OPENEXR_CTL_LIBS],[[
+   [$OPENEXR_CTL_CXXFLAGS $OPENEXR_CXXFLAGS $CTL_CXXFLAGS],
+   [$OPENEXR_CTL_LDFLAGS $OPENEXR_LDFLAGS $CTL_LDFLAGS],
+   [$OPENEXR_CTL_LIBS $OPENEXR_LIBS $CTL_LIBS],[[
 #include <ImfCtlApplyTransforms.h>
 #include <CtlSimdInterpreter.h>
 #include <ImfHeader.h>
@@ -147,7 +160,7 @@ AM_COMPILELINKRUN(
                              envHeader, inHeader, inFb, outHeader, outFb);
    ]],
    AC_MSG_RESULT([Compiled and ran OpenEXR_CTL test program.]); have_ctl=yes, 
-   AC_MSG_RESULT([The OpenEXR_CTL package could not be found.  Will build and install playexr and exrdisplay without ctl support. ]); have_ctl=no)
+   AC_MSG_RESULT([The OpenEXR_CTL and/or CTL packages could not be found.  Will build and install playexr and exrdisplay without ctl support. ]); have_ctl=no)
 
 
 
@@ -165,6 +178,8 @@ fi
 
 [if (test "${have_ctl}" = yes) ; then
    OPENEXR_CTL_CXXFLAGS="$OPENEXR_CTL_CXXFLAGS -DHAVE_CTL_INTERPRETER=1 -DCTL_MODULE_BASE_PATH=\\\"$ACTUAL_PREFIX/lib/CTL\\\""
+   OPENEXR_CTL_LDFLAGS="-DHAVE_CTL_INTERPRETER=1 $OPENEXR_CTL_LDFLAGS $OPENEXR_LDFLAGS $CTL_LDFLAGS"
+   OPENEXR_CTL_LIBS="-DHAVE_CTL_INTERPRETER=0 $OPENEXR_LIBS $OPENEXR_CTL_LIBS $CTL_LIBS"
 else
    OPENEXR_CTL_CXXFLAGS="-DHAVE_CTL_INTERPRETER=0 $OPENEXR_CXXFLAGS"
    OPENEXR_CTL_LIBS="-DHAVE_CTL_INTERPRETER=0 $OPENEXR_LIBS"
