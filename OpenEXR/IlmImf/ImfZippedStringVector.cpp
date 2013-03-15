@@ -269,6 +269,10 @@ void
 ZippedStringVector::readStringVector ( IStream& s ,int size)
 {
    _data->_isCompressed=true;
+   if(size<Xdr::size<int>())
+   {
+       throw(IEX_NAMESPACE::IoExc("corrupt zipped string vector: too small"));
+   }
    int uncompressed_size;
    Xdr::read<StreamIO>(s,uncompressed_size);
    _data->_unCompressedSize=uncompressed_size;

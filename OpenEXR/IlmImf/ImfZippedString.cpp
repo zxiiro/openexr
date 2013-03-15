@@ -241,6 +241,10 @@ ZippedString::writeString ( OStream& s  ) const
 void
 ZippedString::readString ( IStream& s ,int size)
 {
+    if(size<Xdr::size<int>())
+    {
+        throw(IEX_NAMESPACE::IoExc("corrupt zipped string: too small"));
+    }
    _data->_isCompressed=true;
    int uncompressed_size;
    Xdr::read<StreamIO>(s,uncompressed_size);
