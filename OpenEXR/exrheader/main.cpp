@@ -447,7 +447,12 @@ printInfo (const char fileName[])
             {
                 cout << ": \"" << ta->value() << "\"";
             }
-
+            else if (const ZippedStringAttribute *ta =
+                            dynamic_cast <const ZippedStringAttribute *> (a))
+            {
+                cout << ": \"" << ta->value().str() << "\"";
+            }
+            
             else if (const StringVectorAttribute * ta =
                             dynamic_cast<const StringVectorAttribute *>(a))
             {

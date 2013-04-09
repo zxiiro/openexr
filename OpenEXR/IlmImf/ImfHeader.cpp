@@ -1261,9 +1261,14 @@ staticInitialize ()
 	PreviewImageAttribute::registerAttributeType();
 	RationalAttribute::registerAttributeType();
 	StringAttribute::registerAttributeType();
+<<<<<<< HEAD
         ZippedStringAttribute::registerAttributeType();
         ZippedStringVectorAttribute::registerAttributeType();
         StringVectorAttribute::registerAttributeType();
+=======
+          ZippedStringAttribute::registerAttributeType();
+          StringVectorAttribute::registerAttributeType();
+>>>>>>> 3cbb64f... Added ZippedString support
 	TileDescriptionAttribute::registerAttributeType();
 	TimeCodeAttribute::registerAttributeType();
 	V2dAttribute::registerAttributeType();

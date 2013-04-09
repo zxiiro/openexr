@@ -179,7 +179,6 @@ noinst_HEADERS = ImfCompressor.h    \
 		 ImfSystemSpecific.h    \
 		 ImfOptimizedPixelReading.h
 
-
 EXTRA_DIST = $(noinst_HEADERS) b44ExpLogTable.cpp b44ExpLogTable.h CMakeLists.txt
 
 

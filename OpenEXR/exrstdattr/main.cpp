@@ -46,6 +46,7 @@
 #include <ImfStandardAttributes.h>
 #include <ImfVecAttribute.h>
 #include <ImfIntAttribute.h>
+#include <ImfZippedStringAttribute.h>
 #include <ImfTiledInputPart.h>
 #include <ImfTiledOutputPart.h>
 #include <ImfInputPart.h>
@@ -200,6 +201,9 @@ usageMessage (const char argv0[], bool verbose = false)
         "\n"
         "  -string s s\n"
         "        custom string attribute\n"
+        "        (2 strings, attribute name and value)\n"
+        "  -zipstring s s\n"
+        "        custom string attribute, zipped storage\n"
         "        (2 strings, attribute name and value)\n"
         "\n"
         "  -float s f\n"
@@ -452,14 +456,22 @@ void
 getNameAndString (int argc,
                   char **argv,
                   int &i,
-                  AttrMap &attrs)
+                  AttrMap &attrs,
+                  bool zipped
+                 )
 {
     if (i > argc - 3)
         usageMessage (argv[0]);
 
     const char *attrName = argv[i + 1];
     const char *str = argv[i + 2];
-    attrs[attrName] = new StringAttribute (str);
+    if(zipped)
+    {
+        attrs[attrName] = new ZippedStringAttribute (ZippedString(str));
+    }else
+    {
+        attrs[attrName] = new StringAttribute (str);
+    }
     i += 3;
 }
 
@@ -739,8 +751,13 @@ main(int argc, char **argv)
             }
             else if (!strcmp (argv[i], "-string"))
             {
-                getNameAndString (argc, argv, i, attrs);
+                getNameAndString (argc, argv, i, attrs,false);
             }
+            else if (!strcmp (argv[i], "-zipstring"))
+            {
+                getNameAndString (argc, argv, i, attrs,true);
+            }
+            
             else if (!strcmp (argv[i], "-float"))
             {
                 getNameAndFloat (argc, argv, i, attrs);

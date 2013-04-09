@@ -148,8 +148,12 @@ ZippedString& ZippedString::operator= ( const ZippedString& other )
        _data->_data=vector<Bytef>();
  
        
+<<<<<<< HEAD
    }
    return *this;
+=======
+}
+>>>>>>> 3cbb64f... Added ZippedString support
 }
 
 bool ZippedString::operator== ( const ZippedString & other ) const
