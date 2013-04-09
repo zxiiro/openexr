@@ -54,6 +54,8 @@
 #include <ImfMatrixAttribute.h>
 #include <ImfPreviewImageAttribute.h>
 #include <ImfRationalAttribute.h>
+#include <ImfZippedStringAttribute.h>
+#include <ImfZippedStringVectorAttribute.h>
 #include <ImfStringAttribute.h>
 #include <ImfStringVectorAttribute.h>
 #include <ImfTileDescriptionAttribute.h>
@@ -445,10 +447,11 @@ printInfo (const char fileName[])
             {
                 cout << ": \"" << ta->value() << "\"";
             }
+
             else if (const StringVectorAttribute * ta =
                             dynamic_cast<const StringVectorAttribute *>(a))
             {
-                cout << ":";
+//                 cout << ":";
 
                 for (StringVector::const_iterator i = ta->value().begin();
                                 i != ta->value().end();
@@ -457,6 +460,20 @@ printInfo (const char fileName[])
                     cout << "\n    \"" << *i << "\"";
                 }
             }
+            else if (const ZippedStringVectorAttribute * ta =
+                  dynamic_cast<const ZippedStringVectorAttribute *>(a))
+            {
+                cout << ":";
+                StringVector sv=ta->value().vec();
+
+                for (StringVector::const_iterator i = sv.begin();
+                                i!= sv.end();
+                                ++i)
+                {
+                    cout << "\n    \"" << *i << "\"";
+                }
+            }
+
             else if (const RationalAttribute *ta =
                             dynamic_cast <const RationalAttribute *> (a))
             {

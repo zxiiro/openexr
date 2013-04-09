@@ -61,6 +61,8 @@
 #include <ImfRationalAttribute.h>
 #include <ImfStringAttribute.h>
 #include <ImfStringVectorAttribute.h>
+#include <ImfZippedStringAttribute.h>
+#include <ImfZippedStringVectorAttribute.h>
 #include <ImfTileDescriptionAttribute.h>
 #include <ImfTimeCodeAttribute.h>
 #include <ImfVecAttribute.h>
@@ -1259,6 +1261,8 @@ staticInitialize ()
 	PreviewImageAttribute::registerAttributeType();
 	RationalAttribute::registerAttributeType();
 	StringAttribute::registerAttributeType();
+        ZippedStringAttribute::registerAttributeType();
+        ZippedStringVectorAttribute::registerAttributeType();
         StringVectorAttribute::registerAttributeType();
 	TileDescriptionAttribute::registerAttributeType();
 	TimeCodeAttribute::registerAttributeType();

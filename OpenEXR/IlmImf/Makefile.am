@@ -58,6 +58,9 @@ libIlmImf_la_SOURCES = ImfForward.h ImfAttribute.cpp ImfBoxAttribute.cpp ImfCRgb
 		       ImfPxr24Compressor.cpp ImfPxr24Compressor.h \
 		       ImfTestFile.cpp ImfTestFile.h ImfThreading.h \
 		       ImfStringVectorAttribute.cpp ImfStringVectorAttribute.h \
+		       ImfZippedString.cpp ImfZippedString.h \
+		       ImfZippedStringVector.cpp ImfZippedStringVector.h \
+		       ImfZippedStringAttribute.cpp ImfZippedStringAttribute.h \
 		       ImfMultiView.cpp ImfMultiView.h \
 		       ImfAcesFile.cpp ImfAcesFile.h \
 		       ImfCheckedArithmetic.h \
@@ -154,7 +157,9 @@ libIlmImfinclude_HEADERS = ImfForward.h ImfAttribute.h ImfBoxAttribute.h \
 			   ImfDeepCompositing.h ImfCompositeDeepScanLine.h \
 			   ImfNamespace.h ImfForward.h ImfExport.h \
 			   ImfMisc.h          \
-			   ImfPartHelper.h
+			   ImfPartHelper.h \
+                           ImfZippedString.h ImfZippedStringAttribute.h \
+			   ImfZippedStringVector.h ImfZippedStringVectorAttribute.h 
 
 noinst_HEADERS = ImfCompressor.h    \
 		 ImfRleCompressor.h \
