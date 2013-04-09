@@ -61,6 +61,7 @@ libIlmImf_la_SOURCES = ImfForward.h ImfAttribute.cpp ImfBoxAttribute.cpp ImfCRgb
 		       ImfZippedString.cpp ImfZippedString.h \
 		       ImfZippedStringVector.cpp ImfZippedStringVector.h \
 		       ImfZippedStringAttribute.cpp ImfZippedStringAttribute.h \
+		       ImfZippedStringVectorAttribute.cpp ImfZippedStringVectorAttribute.h \
 		       ImfMultiView.cpp ImfMultiView.h \
 		       ImfAcesFile.cpp ImfAcesFile.h \
 		       ImfCheckedArithmetic.h \

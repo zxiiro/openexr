@@ -1267,6 +1267,7 @@ staticInitialize ()
         StringVectorAttribute::registerAttributeType();
 =======
           ZippedStringAttribute::registerAttributeType();
+          ZippedStringVectorAttribute::registerAttributeType();
           StringVectorAttribute::registerAttributeType();
 >>>>>>> 3cbb64f... Added ZippedString support
 	TileDescriptionAttribute::registerAttributeType();
