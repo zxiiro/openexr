@@ -58,7 +58,7 @@ public:
     std::vector<std::string> vec() const;                               ///< access to string, returns unzipped copy of string if still compressed
     ZippedStringVector();                                               ///< initialize empty string vector
     explicit ZippedStringVector(const std::vector<std::string> & str);  ///< cast a vector of strings to a ZippedString
-    explicit ZippedStringVector(const ZippedStringVector & str);        ///< copy constructor
+    ZippedStringVector(const ZippedStringVector & str);        ///< copy constructor
     bool isCompressed() const;                                          ///< true if the string is already compressed
     ZippedStringVector & operator=(const ZippedStringVector & other);               ///< assignment
     bool operator==( const Imf::ZippedStringVector& other ) const;            ///< true if the string vectors are equal, even if one is compressed and the other isn't

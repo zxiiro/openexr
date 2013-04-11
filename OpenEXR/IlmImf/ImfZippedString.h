@@ -58,7 +58,7 @@ public:
     ZippedString();                                  ///< initialize empty string
     explicit ZippedString(const std::string & str);  ///< cast a std::string to a ZippedString
     explicit ZippedString(const char * str);         ///< cast a C string to a ZippedString
-    explicit ZippedString(const ZippedString & str); ///< copy constructor
+    ZippedString(const ZippedString & str); ///< copy constructor
     bool isCompressed() const;                       ///< true if the string is already compressed
     ZippedString & operator=(const ZippedString & other);  ///< assignment
     bool operator==( const Imf::ZippedString& other ) const;     ///< true if the strings are equal, even if one is compressed and the other isn't
