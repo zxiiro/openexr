@@ -185,6 +185,9 @@ bool ZippedString::operator== ( const ZippedString & other ) const
            tmp._str=other._data->_str;
            tmp.zip();
            return tmp._data==_data->_data;
+       }else{
+           // neither is compressed
+           return _data->_str == other._data->_str;
        }
    }
 }

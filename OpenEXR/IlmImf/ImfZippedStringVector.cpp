@@ -211,6 +211,9 @@ bool ZippedStringVector::operator== ( const ZippedStringVector & other ) const
            tmp._vec=other._data->_vec;
            tmp.zip();
            return tmp._data==_data->_data;
+       }else{
+           // both unzipped
+           return other._data->_vec==_data->_vec;
        }
    }
 }
