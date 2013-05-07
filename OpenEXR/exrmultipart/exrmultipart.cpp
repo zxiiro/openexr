@@ -172,8 +172,53 @@ filename_check (vector <string> names, const char* aname)
     }
 }
 
+
+// stolen from exrmaketiled
+Compression
+getCompression (const string &str)
+{
+    Compression c;
+
+    if (str == "no" || str == "none" || str == "NO" || str == "NONE")
+    {
+        c = NO_COMPRESSION;
+    }
+    else if (str == "rle" || str == "RLE")
+    {
+        c = RLE_COMPRESSION;
+    }
+    else if (str == "zip" || str == "ZIP")
+    {
+        c = ZIP_COMPRESSION;
+    }
+    else if (str == "piz" || str == "PIZ")
+    {
+        c = PIZ_COMPRESSION;
+    }
+    else if (str == "pxr24" || str == "PXR24")
+    {
+        c = PXR24_COMPRESSION;
+    }
+    else if (str == "b44" || str == "B44")
+    {
+        c = B44_COMPRESSION;
+    }
+    else if (str == "b44a" || str == "B44A")
+    {
+        c = B44A_COMPRESSION;
+    }
+    else
+    {
+        cerr << "ERROR: unknown compression method \"" << str << "\"." << endl;
+        exit(1);
+    }
+
+    return c;
+}
+
+
 void
-convert(vector <const char*> in, vector<const char *> views,const char* outname, bool override)
+convert(vector <const char*> in, vector<const char *> views,const char* outname, bool override,const char* compression)
 {
     if(in.size()!=1)
     {
@@ -181,6 +226,13 @@ convert(vector <const char*> in, vector<const char *> views,const char* outname,
         "can only convert one file at once - use 'combine' mode for multiple files" << endl;
         exit(1);
     }
+    
+    Compression compMode;
+    if(compression)
+    {
+        compMode = getCompression(compression);
+    }
+    
     try
     {
         MultiPartInputFile infile(in[0]);
@@ -234,6 +286,12 @@ convert(vector <const char*> in, vector<const char *> views,const char* outname,
               output_headers[i].erase("multiView");
           }
           output_headers[i].channels()=ChannelList();
+          
+          if(compression)
+          {
+              output_headers[i].compression()=compMode;
+          }
+          
         }   
         
         make_unique_names(output_headers);
@@ -633,12 +691,17 @@ usageMessage (const char argv[])
             "[options]\n";
     cerr << "   or: exrmultipart -convert -i infile.exr -o outfile.exr "
             "[options]\n";
-            cerr << "\n" << "Options:\n";
+    
+    cerr << "convert mode converts single-part multilayer images into multi-part "
+           "EXR-2 images, using a one-part-per-layer scheme\n";
+    
+    cerr << "\n" << "Options:\n";
     cerr << "-override [0/1]      0-do not override conflicting shared "
             "attributes [default]\n"
             "                     1-override conflicting shared attributes\n";
-
-    cerr << "-view name           (after specifying -i) "
+    cerr << "-compression x       sets the data compression method to x when converting\n"
+            "                     (none/rle/zip/piz/pxr24/b44/b44a, defaults to input method)\n";
+    cerr << "-view name           (after specifying -i when combining) "
             "assign following inputs to view 'name'\n";
     exit (1);
 }
@@ -654,7 +717,8 @@ main (int argc, char * argv[])
     vector <const char*> inFiles;
     vector <const char*> views;
     const char* view = 0;
-    const char *outFile = 0;
+    const char* outFile = 0;
+    const char* compression = NULL;
     bool override = false;
 
     int i = 1;
@@ -688,6 +752,10 @@ main (int argc, char * argv[])
             }
             mode = 4;
         }
+        else if(!strcmp (argv[i] , "-compression"))
+        {
+            mode = 5;
+        }
         else
         {
             switch (mode)
@@ -703,6 +771,8 @@ main (int argc, char * argv[])
             case 4: view = argv[i];
                  mode=1;
                 break;
+            case 5 : compression = argv[i];
+                 break;
             }
         }
         i++;
@@ -732,21 +802,30 @@ main (int argc, char * argv[])
     cout << "output:\n      " << outFile << endl;
     cout << "override:" << override << "\n" << endl;
 
-
     if (!strcmp (argv[1], "-combine"))
     {
         cout << "-combine multipart input " << endl;
+        if(compression)
+        {
+            cerr << "ERROR: cannot specify compression mode when combining\n";
+            return 1;
+        }
         combine (inFiles, views, outFile, override);
     }
     else if (!strcmp(argv[1], "-separate"))
     {
         cout << "-separate multipart input " << endl;
+        if(compression)
+        {
+            cerr << "ERROR: cannot specify compression mode when separating\n";
+            return 1;
+        }
         separate (inFiles, outFile, override);
     }
     else if(!strcmp(argv[1],"-convert"))
     {
         cout << "-convert input to EXR2 multipart" << endl;
-        convert (inFiles, views, outFile, override);
+        convert (inFiles, views, outFile, override,compression);
     }
     else
     {
