@@ -192,6 +192,12 @@ convert(vector <const char*> in, vector<const char *> views,const char* outname,
             exit(1);
         }
         
+        if(isDeepData(infile.header(0).type()))
+        {
+            cerr << "\n" << "ERROR: "
+            " cannot convert deep images: file is already EXR-2.0" << endl;
+        }
+        
         vector<MultiViewChannelName> input_channels;
         
         string hero;
@@ -288,24 +294,80 @@ convert(vector <const char*> in, vector<const char *> views,const char* outname,
         //
         
         MultiPartOutputFile outfile(outname,&output_headers[0],output_headers.size());
-        InputPart inpart(infile,0);
+       
         
+        // convert either scanline or tiled parts
         
-        //
-        // read file
-        //
-        inpart.setFrameBuffer(input_framebuffer);
-        inpart.readPixels(dataWindow.min.y,dataWindow.max.y);
-        
-        //
-        // write each part
-        //
-        
-        for(size_t i=0;i<output_framebuffers.size();i++)
+        if(infile.header(0).type()==TILEDIMAGE)
         {
-            OutputPart outpart(outfile,i);
-            outpart.setFrameBuffer(output_framebuffers[i]);
-            outpart.writePixels(dataWindow.max.y+1-dataWindow.min.y);
+            TiledInputPart inpart(infile,0);
+            inpart.setFrameBuffer(input_framebuffer);
+
+            int x_levels;
+            int y_levels;
+            
+            TileDescription t = infile.header(0).tileDescription();
+            switch(t.mode)
+            {
+                case ONE_LEVEL :
+                    x_levels = 1;
+                    y_levels = 1;
+                    break;
+                case MIPMAP_LEVELS :
+                    x_levels = inpart.numXLevels();
+                    y_levels = 1;
+                    break;
+                case RIPMAP_LEVELS :
+                    x_levels = inpart.numXLevels();
+                    y_levels = inpart.numYLevels();
+            }
+              
+            //
+            // write parts level-interleaved
+            // with r/mipmapped files, data for first level of all parts is stored first
+            // then the second level of each part
+            //
+    
+            for(int x_level = 0 ; x_level < x_levels ; x_level++)
+            {
+                for(int y_level = 0 ; y_level < y_levels ;y_level++)
+                {
+                    // unless we are RIPMapped, the y_level=x_level, not 0
+                    int actual_y_level = t.mode==RIPMAP_LEVELS ? y_level : x_level;
+                    
+                    inpart.readTiles(0,inpart.numXTiles(x_level)-1,0,inpart.numYTiles(actual_y_level)-1,x_level,actual_y_level);
+                          
+                    for(size_t i=0;i<output_framebuffers.size();i++)
+                    {
+                        TiledOutputPart outpart(outfile,i);
+                        outpart.setFrameBuffer(output_framebuffers[i]);   
+                        outpart.writeTiles(0,inpart.numXTiles(x_level)-1,0,inpart.numYTiles(actual_y_level)-1,x_level,actual_y_level);      
+                    }
+                }
+          
+            }
+        }
+        else
+        {
+             InputPart inpart(infile,0);
+        
+            //
+            // read scanline file
+            //
+           inpart.setFrameBuffer(input_framebuffer);
+           inpart.readPixels(dataWindow.min.y,dataWindow.max.y);
+  
+           //
+           // write each scanline part
+           //
+        
+           for(size_t i=0;i<output_framebuffers.size();i++)
+           {
+               OutputPart outpart(outfile,i);
+               outpart.setFrameBuffer(output_framebuffers[i]);
+               outpart.writePixels(dataWindow.max.y+1-dataWindow.min.y);
+           }
+           
         }
         
         
@@ -563,6 +625,10 @@ usageMessage (const char argv[])
     cerr << "\n" << "Usage: "
             "exrmultipart -combine -i input.exr[:partnum] "
             "[input2.exr[:partnum]] [...] -o outfile.exr [options]\n";
+    cerr << "   or: exrmultipart -combine -i -view view1name input.exr[:partnum] "
+            "[input2.exr[:partnum]] [...] -view view2name input3.exr[:partnum] [...] "
+            "-o outfile.exr [options]\n";
+
     cerr << "   or: exrmultipart -separate -i infile.exr -o outfileBaseName "
             "[options]\n";
     cerr << "   or: exrmultipart -convert -i infile.exr -o outfile.exr "
