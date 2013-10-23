@@ -9,12 +9,11 @@ files and building those two packages
 
 1. Launch a command window, navigate to the IlmBase folder with 
 CMakeLists.txt,and type command:
+
 	setlocal
 	del /f CMakeCache.txt
-	cmake
-      -DCMAKE_INSTALL_PREFIX=<where you want to install the ilmbase builds>
-      -G "Visual Studio 10 Win64" 
-      ..\ilmbase
+        cmake  -DCMAKE_INSTALL_PREFIX=<where you want to instal the openexr builds>  -G "Visual Studio 10 Win64" ..\ilmbase
+
 
 2. Navigate to IlmBase folder in Windows Explorer, open ILMBase.sln
 and build the solution. When it build successfully, right click 
@@ -25,6 +24,11 @@ you set up at the previous step.
 	  
 4. Launch a command window, navigate to the OpenEXR folder with 
 CMakeLists.txt, and type command:	  
+
+        export PREFIX=/path/to/ilmbase/install/prefix
+        export LD_LIBRARY_PATH=$PREFIX/lib
+        export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+
 	setlocal
 	del /f CMakeCache.txt
 	cmake 
@@ -40,11 +44,16 @@ INSTALL project and build. It will install the output to the path
 you set up at the previous step. 
 
 
+6. For PyIlmbase, be sure to add the following to the environment:
+
+    export PYTHONPATH=$PREFIX/lib/python2.[6,7]/site-packages
+    
+    
 
 LINUX
 -----
 mkdir  /tmp/openexrbuild
-cd  /tmp/openexrbuild
+cd     /tmp/openexrbuild
 
 -------------
 -- IlmBase --
@@ -61,5 +70,14 @@ for testing do:
 then to install to your chosen location:
     make install
 
+
+
+Notes:
+
+  make help # display the available make targets
+  make # run make VERBOSE=1 to see the debug output
+  make install
+  make test # run the tests, IexTest, ImathTest, etc... IlmImfFuzzTest and IlmImfTest take a __long__ time
+  make package_source # build a source tarball
 
 
