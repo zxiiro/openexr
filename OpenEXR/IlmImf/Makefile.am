@@ -87,9 +87,8 @@ libIlmImf_la_SOURCES = ImfForward.h ImfAttribute.cpp ImfBoxAttribute.cpp ImfCRgb
 		       ImfDeepTiledOutputFile.h ImfDeepTiledOutputFile.cpp \
 		       ImfDeepFrameBuffer.cpp ImfDeepFrameBuffer.h \
 		       ImfDeepCompositing.h ImfDeepCompositing.cpp \
-		       ImfCompositeDeepScanLine.h ImfCompositeDeepScanLine.cpp 
-#		       ImfSystemSpecific.h
-#                      ImfOptimizedPixelReading.h 
+		       ImfCompositeDeepScanLine.h ImfCompositeDeepScanLine.cpp \
+		       ImfDeepImageStateAttribute.h ImfDeepImageStateAttribute.cpp
 
 libIlmImf_la_LDFLAGS = @ILMBASE_LDFLAGS@ -version-info @LIBTOOL_VERSION@ \
 			-no-undefined 
@@ -160,7 +159,9 @@ libIlmImfinclude_HEADERS = ImfForward.h ImfAttribute.h ImfBoxAttribute.h \
 			   ImfMisc.h          \
 			   ImfPartHelper.h \
                            ImfZippedString.h ImfZippedStringAttribute.h \
-			   ImfZippedStringVector.h ImfZippedStringVectorAttribute.h 
+			   ImfZippedStringVector.h ImfZippedStringVectorAttribute.h \
+			   ImfDeepImageState.h \
+			   ImfDeepImageStateAttribute.h
 
 noinst_HEADERS = ImfCompressor.h    \
 		 ImfRleCompressor.h \

@@ -67,8 +67,10 @@
 #include <iostream>
 #include <iomanip>
 
-#include <OpenEXRConfig.h>
-using namespace OPENEXR_IMF_NAMESPACE;
+
+namespace IMF = OPENEXR_IMF_NAMESPACE;
+using namespace IMF;
+
 using namespace std;
 
 
@@ -145,15 +147,15 @@ printPixelType (PixelType pt)
 {
     switch (pt)
     {
-        case UINT:
+        case IMF::UINT:
             cout << "32-bit unsigned integer";
             break;
 
-        case HALF:
+        case IMF::HALF:
             cout << "16-bit floating-point";
             break;
 
-        case FLOAT:
+        case IMF::FLOAT:
             cout << "32-bit floating-point";
             break;
 
