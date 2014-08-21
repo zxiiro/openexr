@@ -46,7 +46,10 @@ IlmImfTest_SOURCES = main.cpp tmpDir.h testAttributes.cpp testChannels.cpp \
 		     testOptimized.cpp testOptimized.h \
 		     testOptimizedInterleavePatterns.cpp testOptimizedInterleavePatterns.h \
 		     testBadTypeAttributes.cpp testBadTypeAttributes.h \
-		     testFutureProofing.cpp testFutureProofing.h
+		     testFutureProofing.cpp testFutureProofing.h \
+	             compareDwa.cpp compareDwa.h \
+	             testDwaCompressorSimd.cpp testDwaCompressorSimd.h \
+	             testRle.cpp testRle.h
 
 AM_CPPFLAGS = -DILM_IMF_TEST_IMAGEDIR=\"$(srcdir)/\"
 
@@ -71,6 +74,8 @@ EXTRA_DIST = comp_none.exr comp_piz.exr comp_rle.exr comp_zip.exr \
 	     comp_zips.exr lineOrder_decreasing.exr lineOrder_increasing.exr \
 	     test_native1.exr test_native2.exr invalid.exr \
 	     tiled.exr comp_b44.exr comp_b44_piz.exr \
+	     comp_dwaa_piz.exr comp_dwaa_v1.exr comp_dwaa_v2.exr \
+	     comp_dwab_piz.exr comp_dwab_v1.exr comp_dwab_v2.exr \
              v1.7.test.planar.exr  v1.7.test.tiled.exr v1.7.test.1.exr v1.7.test.interleaved.exr \
              invalid_shared_attrs_multipart.exr \
 	     tiled_with_scanlineimage_type.exr scanline_with_tiledimage_type.exr \

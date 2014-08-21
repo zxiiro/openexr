@@ -51,8 +51,10 @@
 #include <ImfCompressionAttribute.h>
 #include <ImfDeepImageStateAttribute.h>
 #include <ImfDoubleAttribute.h>
+#include <ImfDwaCompressor.h>
 #include <ImfEnvmapAttribute.h>
 #include <ImfFloatAttribute.h>
+#include <ImfFloatVectorAttribute.h>
 #include <ImfIntAttribute.h>
 #include <ImfKeyCodeAttribute.h>
 #include <ImfLineOrderAttribute.h>
@@ -1253,6 +1255,7 @@ staticInitialize ()
 	DoubleAttribute::registerAttributeType();
 	EnvmapAttribute::registerAttributeType();
 	FloatAttribute::registerAttributeType();
+	FloatVectorAttribute::registerAttributeType();
 	IntAttribute::registerAttributeType();
 	KeyCodeAttribute::registerAttributeType();
 	LineOrderAttribute::registerAttributeType();
@@ -1274,6 +1277,7 @@ staticInitialize ()
 	V3dAttribute::registerAttributeType();
 	V3fAttribute::registerAttributeType();
 	V3iAttribute::registerAttributeType();
+	DwaCompressor::initializeFuncs();
 
 	initialized = true;
     }
