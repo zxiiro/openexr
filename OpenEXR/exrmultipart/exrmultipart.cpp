@@ -311,7 +311,15 @@ getCompression (const string &str)
     {
         c = B44A_COMPRESSION;
     }
-    else
+    else if (str == "dwaa" || str == "DWAA")
+    {
+        c = DWAA_COMPRESSION;
+    }
+    else if (str == "dwab" || str == "DWAB")
+    {
+        c = DWAB_COMPRESSION;
+    }
+   else
     {
         cerr << "ERROR: unknown compression method \"" << str << "\"." << endl;
         exit(1);
@@ -836,7 +844,7 @@ usageMessage (const char argv[])
     cout << "-view name           (after specifying -i) "
             "assign following inputs to view 'name'\n";
     cerr << "-compression x       sets the data compression method to x when converting\n"
-    "                     (none/rle/zip/piz/pxr24/b44/b44a, defaults to input method)\n";
+    "                     (none/rle/zip/piz/pxr24/b44/b44a/dwaa/dwab, defaults to input method)\n";
     
     exit (1);
 }
